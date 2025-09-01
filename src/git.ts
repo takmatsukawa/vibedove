@@ -23,7 +23,8 @@ export async function createBranch(name: string, base: string, cwd = process.cwd
 
 export async function addWorktree(dir: string, branch: string, cwd = process.cwd()): Promise<void> {
   await fs.mkdir(path.dirname(dir), {recursive: true});
-  const p = await $`git -C ${cwd} worktree add --no-checkout ${dir} ${branch}`.nothrow();
+  // Create worktree and check out files for the given branch
+  const p = await $`git -C ${cwd} worktree add ${dir} ${branch}`.nothrow();
   if (p.exitCode !== 0) {
     const stderr = await p.stderr?.text?.();
     throw new Error(`git worktree add failed: ${stderr ?? ''}`);
