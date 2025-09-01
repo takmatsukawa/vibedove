@@ -5,7 +5,10 @@ import {STATUSES} from '../constants';
 import type {Board, Status, Task} from '../types';
 import {loadBoard, saveBoard} from '../board';
 import {shortId} from '../utils/id';
-import {loadConfig, type Config, saveConfig, DEFAULTS} from '../config';
+import {loadConfig, type Config, saveConfig, DEFAULTS, resolveTmpRoot} from '../config';
+import path from 'path';
+import {createBranch, addWorktree, currentBranch} from '../git';
+import {slugify} from '../utils/slug';
 
 type Cursor = {col: number; row: number};
 
@@ -56,6 +59,7 @@ export function App() {
     buf: '',
     original: '',
   });
+  const [message, setMessage] = useState<string>('');
   const grouped = useMemo(() => (board ? group(board) : null), [board]);
 
   useEffect(() => {
@@ -187,7 +191,15 @@ export function App() {
       setInspecting({active: true, task});
       return;
     }
-    if (input === 's') toast('Start task: not implemented yet');
+    if (input === 's') {
+      if (!board || !grouped || !config) return;
+      const list = grouped[STATUSES[cursor.col]];
+      if (list.length === 0) return;
+      const row = Math.min(cursor.row, list.length - 1);
+      const target = inspecting.active && inspecting.task ? inspecting.task : list[row];
+      void startTask(board, target, config, setBoard, setInspecting, setMessage).catch((e) => setMessage(String(e?.message ?? e)));
+      return;
+    }
     if (input === 'p') toast('PR create: not implemented yet');
     if (input === 'd') toast('Done: not implemented yet');
     if (input === 'x') toast('Cancel: not implemented yet');
@@ -235,6 +247,11 @@ export function App() {
           </>
         )}
       </Box>
+      {message ? (
+        <Box marginTop={1}>
+          <Text dimColor>{message}</Text>
+        </Box>
+      ) : null}
       {inspecting.active && inspecting.task ? (
         <Box
           flexDirection="column"
@@ -400,6 +417,40 @@ async function saveDescription(
 }
 
 // (inline editing helpers were replaced by ink-text-input for simplicity)
+
+async function startTask(
+  board: Board,
+  task: Task,
+  cfg: Config,
+  setBoard: (b: Board) => void,
+  setInspecting: (s: {active: boolean; task: Task | null}) => void,
+  setMessage: (m: string) => void
+) {
+  if (task.status !== 'To Do') {
+    setMessage('Start is only available from To Do');
+    return;
+  }
+  const slug = slugify(task.title);
+  const branch = `${cfg.branchPrefix}/task/${task.id}-${slug}`;
+  const base = cfg.defaultBaseBranch ?? (await currentBranch());
+  const wtDir = path.join(resolveTmpRoot(cfg), `${cfg.branchPrefix}-${task.id}-${slug}`);
+
+  await createBranch(branch, base);
+  await addWorktree(wtDir, branch);
+
+  const now = new Date().toISOString();
+  const next: Board = {
+    ...board,
+    tasks: board.tasks.map((t) =>
+      t.id === task.id ? {...t, status: 'In Progress', branch, worktreePath: wtDir, baseBranch: base, updatedAt: now} : t
+    ),
+  };
+  await saveBoard(next);
+  setBoard(next);
+  const updated = next.tasks.find((t) => t.id === task.id) ?? null;
+  setInspecting({active: true, task: updated});
+  setMessage(`Started ${task.id} on ${branch}`);
+}
 
 async function deleteTask(board: Board, task: Task, setBoard: (b: Board) => void, setCursor: (c: Cursor) => void, colIndex: number) {
   const next: Board = {
