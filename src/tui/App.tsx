@@ -9,6 +9,7 @@ import {shortId} from '../utils/id';
 import {loadConfig, type Config, saveConfig, DEFAULTS, resolveTmpRoot} from '../config';
 import path from 'path';
 import {createBranch, addWorktree, currentBranch, removeWorktree} from '../git';
+import { $ } from 'bun';
 import {slugify} from '../utils/slug';
 
 type Cursor = {col: number; row: number};
@@ -143,6 +144,13 @@ export function App() {
         return;
       }
 
+      if (input === 'o') {
+        if (!config) return;
+        const dir = inspecting.task?.worktreePath || process.cwd();
+        void openEditor(dir, config, setMessage);
+        return;
+      }
+
       if (key.escape) {
         if (editChooser) {
           setEditChooser(false);
@@ -189,6 +197,15 @@ export function App() {
       return;
     }
     if (input === 'n') setCreating({active: true, buf: ''});
+    if (input === 'o') {
+      if (!config) return;
+      const list = grouped ? grouped[STATUSES[cursor.col]] : [];
+      const selected = list && list.length ? list[Math.min(cursor.row, list.length - 1)] : undefined;
+      const targetTask = inspecting.active && inspecting.task ? inspecting.task : selected;
+      const dir = targetTask?.worktreePath || process.cwd();
+      void openEditor(dir, config, setMessage);
+      return;
+    }
     if (key.delete || key.backspace) {
       if (!board || !grouped) return;
       const list = grouped[STATUSES[cursor.col]];
@@ -381,6 +398,21 @@ async function reload(setBoard: (b: Board) => void, setConfig?: (c: Config) => v
   const [b, c] = await Promise.all([loadBoard(), loadConfig()]);
   setBoard(b);
   if (setConfig && c) setConfig(c);
+}
+
+async function openEditor(dir: string, cfg: Config, setMessage: (m: string) => void) {
+  const editor = cfg.editor || process.env.EDITOR || null;
+  if (!editor) {
+    setMessage('No editor configured. Set config.editor or $EDITOR.');
+    return;
+  }
+  try {
+    const cmd = `${editor} ${dir}`;
+    await $`bash -lc ${cmd}`.nothrow();
+    setMessage(`Opened editor: ${editor} ${dir}`);
+  } catch (e) {
+    setMessage(`Failed to open editor: ${String((e as any)?.message ?? e)}`);
+  }
 }
 
 async function addTask(board: Board, title: string, setBoard: (b: Board) => void, setCursor: (c: Cursor) => void) {
