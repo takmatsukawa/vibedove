@@ -1,11 +1,15 @@
 {
   "name": "vibedove",
-  "module": "index.ts",
+  "module": "index.tsx",
   "type": "module",
   "devDependencies": {
     "@types/bun": "latest"
   },
   "peerDependencies": {
     "typescript": "^5"
+  },
+  "dependencies": {
+    "ink": "^6.2.3",
+    "react": "^19.1.1"
   }
 }
