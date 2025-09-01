@@ -80,7 +80,7 @@
 - In Review への手動移動時は副作用なし（状態のみ変更）。
 
 ## TUI（Ink）
-- 目的: キーボード中心で Kanban を操作し、タスクと Git 操作を素早く行う。
+- 目的: キーボード中心で Kanban を操作し、タスクと Git 操作を素早く行う（k9s ライク）。
 - 主要ビュー: 5カラムのボード（To Do / In Progress / In Review / Done / Cancelled）。
 - 基本操作(MVP):
   - タスク作成（タイトル入力）
@@ -90,12 +90,28 @@
   - PR作成（In Progress 中のタスクから実行→In Review 遷移）
   - 完了/中止（Done/Cancelled へ移動＝worktree削除）
   - 画面更新/保存（自動保存。手動コマンドも可）
+- キーバインド:
+  - カラム移動: `h`/`l` または `←`/`→`
+  - タスク選択: `j`/`k` または `↑`/`↓`
+  - 状態移動: `>`（次のカラム） / `<`（前のカラム）
+  - 新規作成: `n`
+  - 着手（worktree+ブランチ作成）: `s`
+  - PR作成（gh 使用・In Reviewへ）: `p`
+  - 完了: `d`
+  - 中止: `x`
+  - 更新: `r`
+  - ヘルプ: `?`
+  - 終了: `q`
+- 備考:
+  - Done/Cancelled での worktree 削除は確認なし（MVP）。
+  - In Progress 以外では `p` は無効（トーストで案内）。
 - エディタ起動: 自動では開かない（将来オプション）。
 
-## CLI コマンド（最小）
+## CLI 補助コマンド（任意・後方互換）
 - バイナリ名: `vibedove`
-- コマンド例（TUI優先、補助的にCLIも用意）:
-  - `vibedove` or `vibedove tui`: TUI を起動
+- 位置づけ: TUI を既定としつつ、スクリプト等から操作したい場合の補助。
+- コマンド例:
+  - `vibedove` / `vibedove tui`: TUI を起動（既定）
   - `vibedove new "<title>"`: タスク追加（To Do）
   - `vibedove start <id>`: In Progress へ移行＋worktree/ブランチ作成
   - `vibedove pr <id>`: In Progress 中のタスクで PR 作成し In Review へ
@@ -117,4 +133,3 @@
 - リモートブランチ/PR の自動クリーンアップ
 - Editor/カスタムコマンドの自動起動
 - 代替プロバイダ（GitLab/Bitbucket）や API ベース PR 作成
-
