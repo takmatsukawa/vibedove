@@ -1,20 +1,7 @@
-import React, { useEffect, useState } from "react";
-import { render, Text } from "ink";
+#!/usr/bin/env bun
+import React from 'react';
+import {render} from 'ink';
+import {App} from './src/tui/App';
 
-const Counter = () => {
-  const [counter, setCounter] = useState(0);
+render(<App />);
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCounter((previousCounter) => previousCounter + 1);
-    }, 100);
-
-    return () => {
-      clearInterval(timer);
-    };
-  }, []);
-
-  return <Text color="green">{counter} tests passed</Text>;
-};
-
-render(<Counter />);
