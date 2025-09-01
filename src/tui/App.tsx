@@ -5,6 +5,7 @@ import {STATUSES} from '../constants';
 import type {Board, Status, Task} from '../types';
 import {loadBoard, saveBoard} from '../board';
 import {shortId} from '../utils/id';
+import {loadConfig, type Config, saveConfig, DEFAULTS} from '../config';
 
 type Cursor = {col: number; row: number};
 
@@ -41,6 +42,7 @@ export function App() {
   const [board, setBoard] = useState<Board | null>(null);
   const [cursor, setCursor] = useState<Cursor>({col: 0, row: 0});
   const [showHelp, setShowHelp] = useState(false);
+  const [config, setConfig] = useState<Config | null>(null);
   const [creating, setCreating] = useState<{active: boolean; buf: string}>({active: false, buf: ''});
   const [deleting, setDeleting] = useState<{active: boolean; task: Task | null}>({active: false, task: null});
   const [inspecting, setInspecting] = useState<{active: boolean; task: Task | null}>({active: false, task: null});
@@ -57,7 +59,10 @@ export function App() {
   const grouped = useMemo(() => (board ? group(board) : null), [board]);
 
   useEffect(() => {
-    (async () => setBoard(await loadBoard()))();
+    (async () => {
+      setBoard(await loadBoard());
+      setConfig(await loadConfig());
+    })();
   }, []);
 
   useInput((input, key) => {
@@ -151,7 +156,17 @@ export function App() {
     if (key.downArrow || input === 'j') setCursor((c) => ({...c, row: c.row + 1}));
 
     // Actions
-    if (input === 'r') reload(setBoard);
+    if (input === 'r') reload(setBoard, setConfig);
+    if (input === 'c') {
+      // Generate ~/.vibedove/config.json with current or default values
+      const cfg = config ?? DEFAULTS;
+      void (async () => {
+        await saveConfig(cfg);
+        const reloaded = await loadConfig();
+        setConfig(reloaded);
+      })();
+      return;
+    }
     if (input === 'n') setCreating({active: true, buf: ''});
     if (key.delete || key.backspace) {
       if (!board || !grouped) return;
@@ -178,7 +193,7 @@ export function App() {
     if (input === 'x') toast('Cancel: not implemented yet');
   });
 
-  if (!board || !grouped) return <Text color="yellow">Loading board…</Text>;
+  if (!board || !grouped || !config) return <Text color="yellow">Loading board…</Text>;
 
   const cols = STATUSES.map((s) => grouped[s]);
   const safeRow = (list: Task[]) => Math.min(Math.max(0, cursor.row), Math.max(0, list.length - 1));
@@ -194,6 +209,9 @@ export function App() {
         ))}
       </Box>
       <Box marginTop={1} flexDirection="column">
+        <Text dimColor>
+          cfg: prefix={config.branchPrefix} • remote={config.remoteName} • base={config.defaultBaseBranch ?? 'current'}
+        </Text>
         {creating.active ? (
           <Text>
             New task title: <Text color="green">{creating.buf || ' '}</Text>
@@ -299,9 +317,10 @@ function toast(_msg: string) {
   // For MVP skeleton we just noop; Ink doesn't have global toasts by default
 }
 
-async function reload(setBoard: (b: Board) => void) {
-  const b = await loadBoard();
+async function reload(setBoard: (b: Board) => void, setConfig?: (c: Config) => void) {
+  const [b, c] = await Promise.all([loadBoard(), loadConfig()]);
   setBoard(b);
+  if (setConfig && c) setConfig(c);
 }
 
 async function addTask(board: Board, title: string, setBoard: (b: Board) => void, setCursor: (c: Cursor) => void) {

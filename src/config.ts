@@ -9,7 +9,7 @@ export type Config = {
   remoteName: string; // e.g., "origin"
 };
 
-const DEFAULTS: Config = {
+export const DEFAULTS: Config = {
   branchPrefix: 'vd',
   defaultBaseBranch: null,
   tmpRoot: null,
@@ -18,7 +18,11 @@ const DEFAULTS: Config = {
 
 const GLOBAL_PATH = path.join(os.homedir(), '.vibedove', 'config.json');
 
-export async function loadConfig(): Promise<Config> {
+async function ensureDir(p: string) {
+  await fs.mkdir(p, {recursive: true});
+}
+
+export async function loadConfig(createIfMissing = false): Promise<Config> {
   try {
     const data = await fs.readFile(GLOBAL_PATH, 'utf8');
     const parsed = JSON.parse(data);
@@ -27,8 +31,17 @@ export async function loadConfig(): Promise<Config> {
       ...parsed,
     } satisfies Config;
   } catch {
+    if (createIfMissing) {
+      await saveConfig(DEFAULTS);
+    }
     return DEFAULTS;
   }
+}
+
+export async function saveConfig(cfg: Config): Promise<void> {
+  const dir = path.dirname(GLOBAL_PATH);
+  await ensureDir(dir);
+  await fs.writeFile(GLOBAL_PATH, JSON.stringify(cfg, null, 2), 'utf8');
 }
 
 export function resolveTmpRoot(cfg: Config): string {
@@ -36,4 +49,3 @@ export function resolveTmpRoot(cfg: Config): string {
   const tmp = process.env.TMPDIR || os.tmpdir();
   return path.join(tmp, 'vibedove', 'worktrees');
 }
-
