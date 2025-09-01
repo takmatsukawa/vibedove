@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "ink": "^6.2.3",
+    "ink-text-input": "^6.0.0",
     "react": "^19.1.1"
   }
 }

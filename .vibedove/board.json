@@ -87,11 +87,11 @@
     },
     {
       "id": "t0k9w2e",
-      "title": "CLI補助コマンド実装（new/start/pr/done/cancel）",
-      "description": "てすと",
+      "title": "CLI補助コマンド実装（new/start/pr/done/cancel)",
+      "description": "",
       "status": "In Progress",
       "createdAt": "2025-09-01T00:00:00Z",
-      "updatedAt": "2025-09-01T12:36:25.402Z"
+      "updatedAt": "2025-09-01T13:21:06.937Z"
     }
   ]
 }

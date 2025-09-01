@@ -1,5 +1,6 @@
 import React, {useEffect, useMemo, useState} from 'react';
 import {Box, Text, useInput} from 'ink';
+import TextInput from 'ink-text-input';
 import {STATUSES} from '../constants';
 import type {Board, Status, Task} from '../types';
 import {loadBoard, saveBoard} from '../board';
@@ -43,6 +44,16 @@ export function App() {
   const [creating, setCreating] = useState<{active: boolean; buf: string}>({active: false, buf: ''});
   const [deleting, setDeleting] = useState<{active: boolean; task: Task | null}>({active: false, task: null});
   const [inspecting, setInspecting] = useState<{active: boolean; task: Task | null}>({active: false, task: null});
+  const [editingTitle, setEditingTitle] = useState<{active: boolean; buf: string; original: string}>({
+    active: false,
+    buf: '',
+    original: '',
+  });
+  const [editingDesc, setEditingDesc] = useState<{active: boolean; buf: string; original: string}>({
+    active: false,
+    buf: '',
+    original: '',
+  });
   const grouped = useMemo(() => (board ? group(board) : null), [board]);
 
   useEffect(() => {
@@ -92,6 +103,41 @@ export function App() {
 
     // Inspecting mode (floating detail)
     if (inspecting.active) {
+      // Title editing
+      if (editingTitle.active && inspecting.task) {
+        if (key.escape) {
+          setEditingTitle({active: false, buf: '', original: ''});
+        }
+        return;
+      }
+
+      // Description editing
+      if (editingDesc.active && inspecting.task) {
+        if (key.escape) {
+          setEditingDesc({active: false, buf: '', original: ''});
+        }
+        return;
+      }
+
+      // Not editing: handle inspect controls
+      if (input === 't') {
+        if (!board || !grouped) return;
+        const list = grouped[STATUSES[cursor.col]];
+        if (!list.length) return;
+        const task = list[Math.min(cursor.row, list.length - 1)];
+        setEditingTitle({active: true, buf: task.title, original: task.title});
+        return;
+      }
+      if (input === 'e') {
+        if (!board || !grouped) return;
+        const list = grouped[STATUSES[cursor.col]];
+        if (!list.length) return;
+        const task = list[Math.min(cursor.row, list.length - 1)];
+        const buf = task.description ?? '';
+        setEditingDesc({active: true, buf, original: buf});
+        return;
+      }
+
       if (key.escape || key.return) {
         setInspecting({active: false, task: null});
       }
@@ -195,9 +241,25 @@ export function App() {
           <Text>
             ID: <Text color="cyan">{inspecting.task.id}</Text>
           </Text>
-          <Text>
-            Title: <Text>{inspecting.task.title}</Text>
-          </Text>
+          <Box flexDirection="column">
+            <Text>Title:</Text>
+            {editingTitle.active ? (
+              <TextInput
+                value={editingTitle.buf}
+                onChange={(v) => setEditingTitle((s) => ({...s, buf: v}))}
+                onSubmit={(v) => {
+                  const newTitle = v.trim();
+                  setEditingTitle({active: false, buf: '', original: ''});
+                  if (newTitle.length && board && inspecting.task) {
+                    void saveTitle(board, inspecting.task.id, newTitle, setBoard, setInspecting);
+                  }
+                }}
+              />
+            ) : (
+              <Text>{inspecting.task.title}</Text>
+            )}
+            <Text dimColor>(press t to edit, Enter save, Esc cancel)</Text>
+          </Box>
           <Text>
             Status: <Text>{inspecting.task.status}</Text>
           </Text>
@@ -212,8 +274,20 @@ export function App() {
             </Text>
           ) : null}
           <Text>Description:</Text>
-          <Text color="gray">{inspecting.task.description?.length ? inspecting.task.description : '—'}</Text>
-          <Text dimColor>Press Enter/Esc to close</Text>
+          {editingDesc.active ? (
+            <TextInput
+              value={editingDesc.buf}
+              onChange={(v) => setEditingDesc((s) => ({...s, buf: v}))}
+              onSubmit={(v) => {
+                const text = v;
+                setEditingDesc({active: false, buf: '', original: ''});
+                if (board && inspecting.task) void saveDescription(board, inspecting.task.id, text, setBoard, setInspecting);
+              }}
+            />
+          ) : (
+            <Text color="gray">{inspecting.task.description?.length ? inspecting.task.description : '—'}</Text>
+          )}
+          <Text dimColor>{editingDesc.active ? 'Enter save • Esc cancel' : 'Press e to edit description • Enter/Esc to close'}</Text>
         </Box>
       ) : null}
     </Box>
@@ -279,6 +353,45 @@ async function moveTaskStatus(
   const rows = next.tasks.filter((t) => t.status === STATUSES[col]).length;
   setCursor((c) => ({col, row: Math.min(c.row, Math.max(0, rows - 1))}));
 }
+
+async function saveTitle(
+  board: Board,
+  taskId: string,
+  title: string,
+  setBoard: (b: Board) => void,
+  setInspecting: (s: {active: boolean; task: Task | null}) => void
+) {
+  const now = new Date().toISOString();
+  const next: Board = {
+    ...board,
+    tasks: board.tasks.map((t) => (t.id === taskId ? {...t, title, updatedAt: now} : t)),
+  };
+  await saveBoard(next);
+  setBoard(next);
+  // Keep inspecting open and update task reference
+  const updated = next.tasks.find((t) => t.id === taskId) ?? null;
+  setInspecting({active: true, task: updated});
+}
+
+async function saveDescription(
+  board: Board,
+  taskId: string,
+  description: string,
+  setBoard: (b: Board) => void,
+  setInspecting: (s: {active: boolean; task: Task | null}) => void
+) {
+  const now = new Date().toISOString();
+  const next: Board = {
+    ...board,
+    tasks: board.tasks.map((t) => (t.id === taskId ? {...t, description, updatedAt: now} : t)),
+  };
+  await saveBoard(next);
+  setBoard(next);
+  const updated = next.tasks.find((t) => t.id === taskId) ?? null;
+  setInspecting({active: true, task: updated});
+}
+
+// (inline editing helpers were replaced by ink-text-input for simplicity)
 
 async function deleteTask(board: Board, task: Task, setBoard: (b: Board) => void, setCursor: (c: Cursor) => void, colIndex: number) {
   const next: Board = {
