@@ -18,9 +18,9 @@
     {
       "id": "k3fz9ta",
       "title": "Bun+InkのCLI/TUI骨組みを作成（vibedoveエントリ）",
-      "status": "In Progress",
+      "status": "Done",
       "createdAt": "2025-09-01T00:00:00Z",
-      "updatedAt": "2025-09-01T00:00:00Z"
+      "updatedAt": "2025-09-01T12:35:56.567Z"
     },
     {
       "id": "h3f9k1z",
@@ -88,9 +88,9 @@
     {
       "id": "t0k9w2e",
       "title": "CLI補助コマンド実装（new/start/pr/done/cancel）",
-      "status": "To Do",
+      "status": "In Progress",
       "createdAt": "2025-09-01T00:00:00Z",
-      "updatedAt": "2025-09-01T00:00:00Z"
+      "updatedAt": "2025-09-01T12:36:25.402Z"
     }
   ]
 }
