@@ -156,12 +156,9 @@
     {
       "id": "0kdf70y",
       "title": "外部エディタ",
-      "status": "In Progress",
+      "status": "Done",
       "createdAt": "2025-09-01T23:34:32.820Z",
-      "updatedAt": "2025-09-01T23:42:57.991Z",
-      "branch": "vd/task/0kdf70y-task",
-      "worktreePath": "/var/folders/wz/15t3j8s517vgl5h5txn16bk40000gq/T/vibedove/worktrees/vd-0kdf70y-task",
-      "baseBranch": "main"
+      "updatedAt": "2025-09-01T23:42:57.991Z"
     }
   ]
 }
