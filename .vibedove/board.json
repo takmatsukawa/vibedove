@@ -1,0 +1,97 @@
+{
+  "version": 1,
+  "tasks": [
+    {
+      "id": "v2d9k3a",
+      "title": "MVP仕様をdocsに作成・確定",
+      "status": "Done",
+      "createdAt": "2025-09-01T00:00:00Z",
+      "updatedAt": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "s8m1j4q",
+      "title": "実装計画をboard.jsonへ反映（ドッグフーディング開始）",
+      "status": "Done",
+      "createdAt": "2025-09-01T00:00:00Z",
+      "updatedAt": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "k3fz9ta",
+      "title": "Bun+InkのCLI/TUI骨組みを作成（vibedoveエントリ）",
+      "status": "To Do",
+      "createdAt": "2025-09-01T00:00:00Z",
+      "updatedAt": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "h3f9k1z",
+      "title": "設定読み込み実装（~/.vibedove/config.json・デフォルト込み）",
+      "status": "To Do",
+      "createdAt": "2025-09-01T00:00:00Z",
+      "updatedAt": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "r7d4v0q",
+      "title": "ボードI/O実装（./.vibedove/board.jsonの読み書き・自動保存）",
+      "status": "To Do",
+      "createdAt": "2025-09-01T00:00:00Z",
+      "updatedAt": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "m2n5c8x",
+      "title": "短ID生成・slug生成ユーティリティ実装",
+      "status": "To Do",
+      "createdAt": "2025-09-01T00:00:00Z",
+      "updatedAt": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "y4b6t1p",
+      "title": "ブランチ命名/ベース解決ロジック実装（vd/task/<id>-<slug>）",
+      "status": "To Do",
+      "createdAt": "2025-09-01T00:00:00Z",
+      "updatedAt": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "k3v7s9a",
+      "title": "worktree管理（TMPDIR/vibedove/worktrees への作成/削除）",
+      "status": "To Do",
+      "createdAt": "2025-09-01T00:00:00Z",
+      "updatedAt": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "q9l2j5u",
+      "title": "PR作成（gh CLI）でIn Reviewへ自動遷移",
+      "status": "To Do",
+      "createdAt": "2025-09-01T00:00:00Z",
+      "updatedAt": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "d6c4p1m",
+      "title": "TUI: 5カラムボード表示＆基本ナビゲーション（h/l, j/k）",
+      "status": "To Do",
+      "createdAt": "2025-09-01T00:00:00Z",
+      "updatedAt": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "z7x3n8w",
+      "title": "TUI: キーバインド実装（n,s,p,d,x,r,?,q と状態移動</>）",
+      "status": "To Do",
+      "createdAt": "2025-09-01T00:00:00Z",
+      "updatedAt": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "u5h2g9e",
+      "title": "エラーハンドリング/ロールバック（git/worktree失敗時の片付け）",
+      "status": "To Do",
+      "createdAt": "2025-09-01T00:00:00Z",
+      "updatedAt": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "t0k9w2e",
+      "title": "CLI補助コマンド実装（new/start/pr/done/cancel）",
+      "status": "To Do",
+      "createdAt": "2025-09-01T00:00:00Z",
+      "updatedAt": "2025-09-01T00:00:00Z"
+    }
+  ]
+}
+
