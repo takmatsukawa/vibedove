@@ -131,16 +131,6 @@ export function App() {
       }
 
       // Not editing: handle inspect controls
-      if (input === '<') {
-        if (!board || !grouped || !inspecting.task) return;
-        const idx = STATUSES.indexOf(inspecting.task.status);
-        const nextIdx = Math.max(0, idx - 1);
-        const next = STATUSES[nextIdx];
-        if (next !== inspecting.task.status) {
-          void changeTaskStatus(board, inspecting.task.id, next, setBoard, setCursor, setInspecting);
-        }
-        return;
-      }
       if (input === 't') {
         if (!board || !inspecting.task) return;
         if (inspecting.task.status === 'In Progress') {
