@@ -4,7 +4,6 @@ import {STATUSES} from '../constants';
 import type {Board, Status, Task} from '../types';
 import {loadBoard, saveBoard} from '../board';
 import {shortId} from '../utils/id';
-import {slugify} from '../utils/slug';
 
 type Cursor = {col: number; row: number};
 
@@ -42,6 +41,7 @@ export function App() {
   const [cursor, setCursor] = useState<Cursor>({col: 0, row: 0});
   const [showHelp, setShowHelp] = useState(false);
   const [creating, setCreating] = useState<{active: boolean; buf: string}>({active: false, buf: ''});
+  const [deleting, setDeleting] = useState<{active: boolean; task: Task | null}>({active: false, task: null});
   const grouped = useMemo(() => (board ? group(board) : null), [board]);
 
   useEffect(() => {
@@ -74,6 +74,21 @@ export function App() {
       return; // don't process other keys while creating
     }
 
+    // Deleting confirm mode
+    if (deleting.active) {
+      if (key.escape || input === 'n' || input === 'N') {
+        setDeleting({active: false, task: null});
+        return;
+      }
+      if (input === 'y' || input === 'Y') {
+        const t = deleting.task;
+        setDeleting({active: false, task: null});
+        if (t && board) void deleteTask(board, t, setBoard, setCursor, cursor.col);
+        return;
+      }
+      return; // ignore other keys while confirming
+    }
+
     // Navigation
     if (key.leftArrow || input === 'h') setCursor((c) => ({...c, col: Math.max(0, c.col - 1), row: 0}));
     if (key.rightArrow || input === 'l') setCursor((c) => ({...c, col: Math.min(STATUSES.length - 1, c.col + 1), row: 0}));
@@ -83,6 +98,15 @@ export function App() {
     // Actions
     if (input === 'r') reload(setBoard);
     if (input === 'n') setCreating({active: true, buf: ''});
+    if (key.delete || key.backspace) {
+      if (!board || !grouped) return;
+      const list = grouped[STATUSES[cursor.col]];
+      if (list.length === 0) return;
+      const row = Math.min(cursor.row, list.length - 1);
+      const task = list[row];
+      setDeleting({active: true, task});
+      return;
+    }
     if (input === '>' || input === '<') {
       if (!board || !grouped) return;
       const col = cursor.col;
@@ -120,6 +144,10 @@ export function App() {
         {creating.active ? (
           <Text>
             New task title: <Text color="green">{creating.buf || ' '}</Text>
+          </Text>
+        ) : deleting.active && deleting.task ? (
+          <Text>
+            Delete task <Text color="red">"{deleting.task.title}"</Text>? (y/N)
           </Text>
         ) : showHelp ? (
           <Help />
@@ -189,4 +217,15 @@ async function moveTaskStatus(
   const col = toColIndex;
   const rows = next.tasks.filter((t) => t.status === STATUSES[col]).length;
   setCursor((c) => ({col, row: Math.min(c.row, Math.max(0, rows - 1))}));
+}
+
+async function deleteTask(board: Board, task: Task, setBoard: (b: Board) => void, setCursor: (c: Cursor) => void, colIndex: number) {
+  const next: Board = {
+    ...board,
+    tasks: board.tasks.filter((t) => t.id !== task.id),
+  };
+  await saveBoard(next);
+  setBoard(next);
+  const rows = next.tasks.filter((t) => t.status === STATUSES[colIndex]).length;
+  setCursor((c) => ({col: colIndex, row: Math.min(c.row, Math.max(0, rows - 1))}));
 }
