@@ -42,6 +42,7 @@ export function App() {
   const [showHelp, setShowHelp] = useState(false);
   const [creating, setCreating] = useState<{active: boolean; buf: string}>({active: false, buf: ''});
   const [deleting, setDeleting] = useState<{active: boolean; task: Task | null}>({active: false, task: null});
+  const [inspecting, setInspecting] = useState<{active: boolean; task: Task | null}>({active: false, task: null});
   const grouped = useMemo(() => (board ? group(board) : null), [board]);
 
   useEffect(() => {
@@ -49,7 +50,7 @@ export function App() {
   }, []);
 
   useInput((input, key) => {
-    if (key.escape || input === 'q') process.exit(0);
+    if (input === 'q') process.exit(0);
     if (input === '?') setShowHelp((v) => !v);
 
     // Creating mode (simple inline input without extra deps)
@@ -89,6 +90,14 @@ export function App() {
       return; // ignore other keys while confirming
     }
 
+    // Inspecting mode (floating detail)
+    if (inspecting.active) {
+      if (key.escape || key.return) {
+        setInspecting({active: false, task: null});
+      }
+      return; // ignore other keys while inspecting
+    }
+
     // Navigation
     if (key.leftArrow || input === 'h') setCursor((c) => ({...c, col: Math.max(0, c.col - 1), row: 0}));
     if (key.rightArrow || input === 'l') setCursor((c) => ({...c, col: Math.min(STATUSES.length - 1, c.col + 1), row: 0}));
@@ -119,6 +128,15 @@ export function App() {
       const next = STATUSES[nextIndex];
       if (next !== task.status) void moveTaskStatus(board, task.id, next, setBoard, setCursor, nextIndex);
     }
+    if (key.return) {
+      if (!board || !grouped) return;
+      const list = grouped[STATUSES[cursor.col]];
+      if (list.length === 0) return;
+      const row = Math.min(cursor.row, list.length - 1);
+      const task = list[row];
+      setInspecting({active: true, task});
+      return;
+    }
     if (input === 's') toast('Start task: not implemented yet');
     if (input === 'p') toast('PR create: not implemented yet');
     if (input === 'd') toast('Done: not implemented yet');
@@ -140,7 +158,7 @@ export function App() {
           <Column key={s} title={`${s} (${grouped[s].length})`} tasks={grouped[s]} selected={i === cursor.col ? safeRow(grouped[s]) : -1} />
         ))}
       </Box>
-      <Box marginTop={1}>
+      <Box marginTop={1} flexDirection="column">
         {creating.active ? (
           <Text>
             New task title: <Text color="green">{creating.buf || ' '}</Text>
@@ -152,9 +170,52 @@ export function App() {
         ) : showHelp ? (
           <Help />
         ) : (
-          <Text dimColor>Press n to create • ? for help • q to quit</Text>
+          <>
+            <Text dimColor>Press Enter to view details • n to create • ? for help • q to quit</Text>
+            {grouped[STATUSES[cursor.col]].length > 0 ? (
+              <Text dimColor>
+                Desc preview: {(grouped[STATUSES[cursor.col]][Math.min(cursor.row, grouped[STATUSES[cursor.col]].length - 1)].description || '').split('\n')[0]}
+              </Text>
+            ) : (
+              <Text dimColor>—</Text>
+            )}
+          </>
         )}
       </Box>
+      {inspecting.active && inspecting.task ? (
+        <Box
+          flexDirection="column"
+          borderStyle="round"
+          borderColor="cyan"
+          paddingX={1}
+          paddingY={0}
+          marginTop={1}
+        >
+          <Text bold>Task Details</Text>
+          <Text>
+            ID: <Text color="cyan">{inspecting.task.id}</Text>
+          </Text>
+          <Text>
+            Title: <Text>{inspecting.task.title}</Text>
+          </Text>
+          <Text>
+            Status: <Text>{inspecting.task.status}</Text>
+          </Text>
+          {inspecting.task.branch ? (
+            <Text>
+              Branch: <Text color="green">{inspecting.task.branch}</Text>
+            </Text>
+          ) : null}
+          {inspecting.task.worktreePath ? (
+            <Text>
+              Worktree: <Text color="green">{inspecting.task.worktreePath}</Text>
+            </Text>
+          ) : null}
+          <Text>Description:</Text>
+          <Text color="gray">{inspecting.task.description?.length ? inspecting.task.description : '—'}</Text>
+          <Text dimColor>Press Enter/Esc to close</Text>
+        </Box>
+      ) : null}
     </Box>
   );
 }

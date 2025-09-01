@@ -43,6 +43,7 @@
     {
       "id": "k3fz9ta",              // a-z0-9 で7文字の短ID
       "title": "Fix login flow",    // 必須（タイトルのみ）
+      "description": "...optional detailed text...", // 任意（複数行可）
       "status": "To Do",             // 上記5種類のいずれか
       "createdAt": "2025-09-01T12:34:56Z",
       "updatedAt": "2025-09-01T12:34:56Z",
@@ -93,6 +94,7 @@
 - キーバインド:
   - カラム移動: `h`/`l` または `←`/`→`
   - タスク選択: `j`/`k` または `↑`/`↓`
+  - 詳細表示（フローティング）: `Enter`（Enter/Escで閉じる）
   - 状態移動: `>`（次のカラム） / `<`（前のカラム）
   - 新規作成: `n`
   - 削除: `Delete` / `Backspace`（確認ダイアログあり）
