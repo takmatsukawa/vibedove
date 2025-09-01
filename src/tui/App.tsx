@@ -1,6 +1,7 @@
 import React, {useEffect, useMemo, useState} from 'react';
 import {Box, Text, useInput} from 'ink';
 import TextInput from 'ink-text-input';
+import SelectInput from 'ink-select-input';
 import {STATUSES} from '../constants';
 import type {Board, Status, Task} from '../types';
 import {loadBoard, saveBoard} from '../board';
@@ -49,6 +50,7 @@ export function App() {
   const [creating, setCreating] = useState<{active: boolean; buf: string}>({active: false, buf: ''});
   const [deleting, setDeleting] = useState<{active: boolean; task: Task | null}>({active: false, task: null});
   const [inspecting, setInspecting] = useState<{active: boolean; task: Task | null}>({active: false, task: null});
+  const [editChooser, setEditChooser] = useState(false);
   const [editingTitle, setEditingTitle] = useState<{active: boolean; buf: string; original: string}>({
     active: false,
     buf: '',
@@ -140,24 +142,27 @@ export function App() {
         return;
       }
       if (input === 't') {
-        if (!board || !grouped) return;
-        const list = grouped[STATUSES[cursor.col]];
-        if (!list.length) return;
-        const task = list[Math.min(cursor.row, list.length - 1)];
-        setEditingTitle({active: true, buf: task.title, original: task.title});
+        if (!board || !inspecting.task) return;
+        if (inspecting.task.status === 'In Progress') {
+          void changeTaskStatus(board, inspecting.task.id, 'To Do', setBoard, setCursor, setInspecting);
+        }
         return;
       }
       if (input === 'e') {
-        if (!board || !grouped) return;
-        const list = grouped[STATUSES[cursor.col]];
-        if (!list.length) return;
-        const task = list[Math.min(cursor.row, list.length - 1)];
-        const buf = task.description ?? '';
-        setEditingDesc({active: true, buf, original: buf});
+        setEditChooser(true);
         return;
       }
 
-      if (key.escape || key.return) {
+      if (key.escape) {
+        if (editChooser) {
+          setEditChooser(false);
+          return;
+        }
+        setInspecting({active: false, task: null});
+      }
+      if (key.return) {
+        // Don't close detail while chooser or editors are active
+        if (editChooser || editingTitle.active || editingDesc.active) return;
         setInspecting({active: false, task: null});
       }
       return; // ignore other keys while inspecting
@@ -300,7 +305,7 @@ export function App() {
             ) : (
               <Text>{inspecting.task.title}</Text>
             )}
-            <Text dimColor>(press t to edit, Enter save, Esc cancel)</Text>
+            <Text dimColor>(press e to edit, Enter save, Esc cancel)</Text>
           </Box>
           <Text>
             Status: <Text>{inspecting.task.status}</Text>
@@ -329,7 +334,25 @@ export function App() {
           ) : (
             <Text color="gray">{inspecting.task.description?.length ? inspecting.task.description : '—'}</Text>
           )}
-          <Text dimColor>{editingDesc.active ? 'Enter save • Esc cancel' : 'Press e to edit description • Enter/Esc to close'}</Text>
+          <Text dimColor>{editingDesc.active ? 'Enter save • Esc cancel' : 'Press e to edit • Enter/Esc to close'}</Text>
+        </Box>
+      ) : null}
+      {editChooser && inspecting.active && inspecting.task ? (
+        <Box marginTop={1}>
+          <SelectInput
+            items={[
+              {label: 'Edit Title', value: 'title'},
+              {label: 'Edit Description', value: 'description'},
+            ]}
+            onSelect={(item: any) => {
+              setEditChooser(false);
+              if (item.value === 'title') {
+                setEditingTitle({active: true, buf: inspecting.task!.title, original: inspecting.task!.title});
+              } else {
+                setEditingDesc({active: true, buf: inspecting.task!.description ?? '', original: inspecting.task!.description ?? ''});
+              }
+            }}
+          />
         </Box>
       ) : null}
     </Box>
