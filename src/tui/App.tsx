@@ -2,7 +2,9 @@ import React, {useEffect, useMemo, useState} from 'react';
 import {Box, Text, useInput} from 'ink';
 import {STATUSES} from '../constants';
 import type {Board, Status, Task} from '../types';
-import {loadBoard} from '../board';
+import {loadBoard, saveBoard} from '../board';
+import {shortId} from '../utils/id';
+import {slugify} from '../utils/slug';
 
 type Cursor = {col: number; row: number};
 
@@ -39,6 +41,7 @@ export function App() {
   const [board, setBoard] = useState<Board | null>(null);
   const [cursor, setCursor] = useState<Cursor>({col: 0, row: 0});
   const [showHelp, setShowHelp] = useState(false);
+  const [creating, setCreating] = useState<{active: boolean; buf: string}>({active: false, buf: ''});
   const grouped = useMemo(() => (board ? group(board) : null), [board]);
 
   useEffect(() => {
@@ -49,20 +52,53 @@ export function App() {
     if (key.escape || input === 'q') process.exit(0);
     if (input === '?') setShowHelp((v) => !v);
 
+    // Creating mode (simple inline input without extra deps)
+    if (creating.active) {
+      if (key.return) {
+        const title = creating.buf.trim();
+        setCreating({active: false, buf: ''});
+        if (title.length > 0 && board) void addTask(board, title, setBoard, setCursor);
+        return;
+      }
+      if (key.escape) {
+        setCreating({active: false, buf: ''});
+        return;
+      }
+      if (key.backspace || key.delete) {
+        setCreating((s) => ({active: true, buf: s.buf.slice(0, -1)}));
+        return;
+      }
+      if (input) {
+        setCreating((s) => ({active: true, buf: s.buf + input}));
+      }
+      return; // don't process other keys while creating
+    }
+
     // Navigation
     if (key.leftArrow || input === 'h') setCursor((c) => ({...c, col: Math.max(0, c.col - 1), row: 0}));
     if (key.rightArrow || input === 'l') setCursor((c) => ({...c, col: Math.min(STATUSES.length - 1, c.col + 1), row: 0}));
     if (key.upArrow || input === 'k') setCursor((c) => ({...c, row: Math.max(0, c.row - 1)}));
     if (key.downArrow || input === 'j') setCursor((c) => ({...c, row: c.row + 1}));
 
-    // Placeholder actions
+    // Actions
     if (input === 'r') reload(setBoard);
-    if (input === 'n') toast('New task: not implemented yet');
+    if (input === 'n') setCreating({active: true, buf: ''});
+    if (input === '>' || input === '<') {
+      if (!board || !grouped) return;
+      const col = cursor.col;
+      const list = grouped[STATUSES[col]];
+      if (list.length === 0) return;
+      const row = Math.min(cursor.row, list.length - 1);
+      const task = list[row];
+      const dir = input === '>' ? 1 : -1;
+      const nextIndex = Math.min(Math.max(0, STATUSES.indexOf(task.status) + dir), STATUSES.length - 1);
+      const next = STATUSES[nextIndex];
+      if (next !== task.status) void moveTaskStatus(board, task.id, next, setBoard, setCursor, nextIndex);
+    }
     if (input === 's') toast('Start task: not implemented yet');
     if (input === 'p') toast('PR create: not implemented yet');
     if (input === 'd') toast('Done: not implemented yet');
     if (input === 'x') toast('Cancel: not implemented yet');
-    if (input === '>' || input === '<') toast('Move status: not implemented yet');
   });
 
   if (!board || !grouped) return <Text color="yellow">Loading board…</Text>;
@@ -81,7 +117,15 @@ export function App() {
         ))}
       </Box>
       <Box marginTop={1}>
-        {showHelp ? <Help /> : <Text dimColor>Press ? for help • q to quit</Text>}
+        {creating.active ? (
+          <Text>
+            New task title: <Text color="green">{creating.buf || ' '}</Text>
+          </Text>
+        ) : showHelp ? (
+          <Help />
+        ) : (
+          <Text dimColor>Press n to create • ? for help • q to quit</Text>
+        )}
       </Box>
     </Box>
   );
@@ -108,3 +152,41 @@ async function reload(setBoard: (b: Board) => void) {
   setBoard(b);
 }
 
+async function addTask(board: Board, title: string, setBoard: (b: Board) => void, setCursor: (c: Cursor) => void) {
+  const id = shortId(7);
+  const now = new Date().toISOString();
+  const task: Task = {
+    id,
+    title,
+    status: 'To Do',
+    createdAt: now,
+    updatedAt: now,
+  };
+  const next: Board = {...board, tasks: [...board.tasks, task]};
+  await saveBoard(next);
+  setBoard(next);
+  // move cursor to To Do column and select last item
+  const col = STATUSES.indexOf('To Do');
+  setCursor({col, row: Math.max(0, next.tasks.filter((t) => t.status === 'To Do').length - 1)});
+}
+
+async function moveTaskStatus(
+  board: Board,
+  taskId: string,
+  status: Status,
+  setBoard: (b: Board) => void,
+  setCursor: (c: Cursor) => void,
+  toColIndex: number
+) {
+  const now = new Date().toISOString();
+  const next: Board = {
+    ...board,
+    tasks: board.tasks.map((t) => (t.id === taskId ? {...t, status, updatedAt: now} : t)),
+  };
+  await saveBoard(next);
+  setBoard(next);
+  // move cursor to the destination column, keep row within bounds
+  const col = toColIndex;
+  const rows = next.tasks.filter((t) => t.status === STATUSES[col]).length;
+  setCursor((c) => ({col, row: Math.min(c.row, Math.max(0, rows - 1))}));
+}
