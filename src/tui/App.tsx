@@ -197,7 +197,7 @@ export function App() {
       if (list.length === 0) return;
       const row = Math.min(cursor.row, list.length - 1);
       const target = inspecting.active && inspecting.task ? inspecting.task : list[row];
-      void startTask(board, target, config, setBoard, setInspecting, setMessage).catch((e) => setMessage(String(e?.message ?? e)));
+      void startTask(board, target, config, setBoard, setInspecting, setMessage, setCursor).catch((e) => setMessage(String(e?.message ?? e)));
       return;
     }
     if (input === 'p') toast('PR create: not implemented yet');
@@ -424,7 +424,8 @@ async function startTask(
   cfg: Config,
   setBoard: (b: Board) => void,
   setInspecting: (s: {active: boolean; task: Task | null}) => void,
-  setMessage: (m: string) => void
+  setMessage: (m: string) => void,
+  setCursor: (c: Cursor) => void
 ) {
   if (task.status !== 'To Do') {
     setMessage('Start is only available from To Do');
@@ -449,6 +450,11 @@ async function startTask(
   setBoard(next);
   const updated = next.tasks.find((t) => t.id === task.id) ?? null;
   setInspecting({active: true, task: updated});
+  // Move selection to In Progress column on the updated task
+  const col = STATUSES.indexOf('In Progress');
+  const inProg = next.tasks.filter((t) => t.status === 'In Progress');
+  const row = Math.max(0, inProg.findIndex((t) => t.id === task.id));
+  setCursor({col, row});
   setMessage(`Started ${task.id} on ${branch}`);
 }
 

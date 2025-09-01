@@ -25,10 +25,13 @@
     {
       "id": "h3f9k1z",
       "title": "設定読み込み実装（~/.vibedove/config.json・デフォルト込み）",
-      "status": "To Do",
+      "status": "In Progress",
       "createdAt": "2025-09-01T00:00:00Z",
-      "updatedAt": "2025-09-01T15:14:15.483Z",
-      "description": ""
+      "updatedAt": "2025-09-01T15:41:07.587Z",
+      "description": "",
+      "branch": "vd/task/h3f9k1z-vibedoveconfigjson",
+      "worktreePath": "/var/folders/wz/15t3j8s517vgl5h5txn16bk40000gq/T/vibedove/worktrees/vd-h3f9k1z-vibedoveconfigjson",
+      "baseBranch": "main"
     },
     {
       "id": "r7d4v0q",
