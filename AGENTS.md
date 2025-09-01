@@ -109,3 +109,9 @@ bun --hot ./index.ts
 ```
 
 For more information, read the Bun API docs in `node_modules/bun-types/docs/**.md`.
+
+## Vibedove Development
+
+- Board-driven workflow: Update `./.vibedove/board.json` as the Kanban source of truth during development. Reflect task creation, status changes (To Do/In Progress/In Review/Done/Cancelled), and use it for dogfooding.
+- Spec location: The MVP specification is documented in `docs/vibedove-spec.md`. Treat it as authoritative; update the spec alongside behavior changes.
+- TUI: Run `bun index.tsx` to open the Ink-based board for interactive development and validation.
