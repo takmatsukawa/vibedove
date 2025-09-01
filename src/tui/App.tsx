@@ -162,18 +162,7 @@ export function App() {
       setDeleting({active: true, task});
       return;
     }
-    if (input === '>' || input === '<') {
-      if (!board || !grouped) return;
-      const col = cursor.col;
-      const list = grouped[STATUSES[col]];
-      if (list.length === 0) return;
-      const row = Math.min(cursor.row, list.length - 1);
-      const task = list[row];
-      const dir = input === '>' ? 1 : -1;
-      const nextIndex = Math.min(Math.max(0, STATUSES.indexOf(task.status) + dir), STATUSES.length - 1);
-      const next = STATUSES[nextIndex];
-      if (next !== task.status) void moveTaskStatus(board, task.id, next, setBoard, setCursor, nextIndex);
-    }
+    // status move via < > removed; will be handled in detail view
     if (key.return) {
       if (!board || !grouped) return;
       const list = grouped[STATUSES[cursor.col]];
