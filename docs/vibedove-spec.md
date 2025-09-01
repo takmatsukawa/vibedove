@@ -23,13 +23,15 @@
   - `defaultBaseBranch` (string | null): 作業ブランチ作成時のベース。未設定(null/欠落)なら「現在チェックアウト中のブランチ」。
   - `tmpRoot` (string | null): worktree の親ディレクトリ。未設定なら OS の TMPDIR を用い `TMPDIR/vibedove/worktrees` を使用。
   - `remoteName` (string): リモート名。既定値: "origin"。
+  - `editor` (string | null): 外部エディタのコマンド名（例: "code"、"nvim"）。未設定時は環境変数 `EDITOR` を試し、なければ無効。
 - 例:
 ```json
 {
   "branchPrefix": "vd",
   "defaultBaseBranch": null,
   "tmpRoot": null,
-  "remoteName": "origin"
+  "remoteName": "origin",
+  "editor": "nvim"
 }
 ```
 - 生成: TUI 上で `c` キーで現在の設定（未読込時は既定値）を保存して生成できる。

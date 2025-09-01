@@ -247,7 +247,7 @@ export function App() {
       </Box>
       <Box marginTop={1} flexDirection="column">
         <Text dimColor>
-          cfg: prefix={config.branchPrefix} • remote={config.remoteName} • base={config.defaultBaseBranch ?? 'current'}
+          cfg: prefix={config.branchPrefix} • remote={config.remoteName} • base={config.defaultBaseBranch ?? 'current'} • editor={config.editor ?? '-'}
         </Text>
         {creating.active ? (
           <Text>

@@ -7,6 +7,7 @@ export type Config = {
   defaultBaseBranch: string | null; // null -> use current branch
   tmpRoot: string | null; // null -> use TMPDIR/vibedove/worktrees
   remoteName: string; // e.g., "origin"
+  editor: string | null; // e.g., "code" or "$EDITOR" value
 };
 
 export const DEFAULTS: Config = {
@@ -14,6 +15,7 @@ export const DEFAULTS: Config = {
   defaultBaseBranch: null,
   tmpRoot: null,
   remoteName: 'origin',
+  editor: process.env.EDITOR ?? null,
 };
 
 const GLOBAL_PATH = path.join(os.homedir(), '.vibedove', 'config.json');
