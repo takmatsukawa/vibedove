@@ -100,6 +100,8 @@
     - タイトル編集開始: `t`（Enterで確定、Escで取消）
     - 説明編集開始: `e`（ink-text-input による単一行編集、Enterで確定、Escで取消）
     - 備考: 端末によっては Shift+Enter を区別できない場合があります。その場合の代替操作は将来検討。
+  - 詳細表示中の状態移動:
+    - 前のカラムへ: `<`（例: In Progress → To Do）
   - 新規作成: `n`
   - 削除: `Delete` / `Backspace`（確認ダイアログあり）
   - 着手（worktree+ブランチ作成）: `s`

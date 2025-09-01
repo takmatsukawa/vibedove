@@ -129,6 +129,16 @@ export function App() {
       }
 
       // Not editing: handle inspect controls
+      if (input === '<') {
+        if (!board || !grouped || !inspecting.task) return;
+        const idx = STATUSES.indexOf(inspecting.task.status);
+        const nextIdx = Math.max(0, idx - 1);
+        const next = STATUSES[nextIdx];
+        if (next !== inspecting.task.status) {
+          void changeTaskStatus(board, inspecting.task.id, next, setBoard, setCursor, setInspecting);
+        }
+        return;
+      }
       if (input === 't') {
         if (!board || !grouped) return;
         const list = grouped[STATUSES[cursor.col]];
@@ -412,6 +422,29 @@ async function saveDescription(
   };
   await saveBoard(next);
   setBoard(next);
+  const updated = next.tasks.find((t) => t.id === taskId) ?? null;
+  setInspecting({active: true, task: updated});
+}
+
+async function changeTaskStatus(
+  board: Board,
+  taskId: string,
+  status: Status,
+  setBoard: (b: Board) => void,
+  setCursor: (c: Cursor) => void,
+  setInspecting: (s: {active: boolean; task: Task | null}) => void
+) {
+  const now = new Date().toISOString();
+  const next: Board = {
+    ...board,
+    tasks: board.tasks.map((t) => (t.id === taskId ? {...t, status, updatedAt: now} : t)),
+  };
+  await saveBoard(next);
+  setBoard(next);
+  const col = STATUSES.indexOf(status);
+  const inCol = next.tasks.filter((t) => t.status === status);
+  const row = Math.max(0, inCol.findIndex((t) => t.id === taskId));
+  setCursor({col, row});
   const updated = next.tasks.find((t) => t.id === taskId) ?? null;
   setInspecting({active: true, task: updated});
 }
