@@ -175,6 +175,18 @@ export function App() {
     if (key.downArrow || input === 'j') setCursor((c) => ({...c, row: c.row + 1}));
 
     // Actions
+    if (input === 't') {
+      // Also allow moving In Progress -> To Do from list view
+      if (!board || !grouped) return;
+      const list = grouped[STATUSES[cursor.col]];
+      if (list.length === 0) return;
+      const row = Math.min(cursor.row, list.length - 1);
+      const task = list[row];
+      if (task.status === 'In Progress') {
+        void changeTaskStatus(board, task.id, 'To Do', setBoard, setCursor, setInspecting);
+      }
+      return;
+    }
     if (input === 'r') reload(setBoard, setConfig);
     if (input === 'c') {
       // Generate ~/.vibedove/config.json with current or default values

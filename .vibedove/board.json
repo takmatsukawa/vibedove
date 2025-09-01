@@ -1,31 +1,157 @@
 {
   "version": 1,
   "tasks": [
-    {"id": "v2d9k3a", "title": "MVP仕様をdocsに作成・確定", "status": "Done", "createdAt": "2025-09-01T00:00:00Z", "updatedAt": "2025-09-01T00:00:00Z"},
-    {"id": "s8m1j4q", "title": "実装計画をboard.jsonへ反映（ドッグフーディング開始）", "status": "Done", "createdAt": "2025-09-01T00:00:00Z", "updatedAt": "2025-09-01T00:00:00Z"},
-    {"id": "k3fz9ta", "title": "Bun+InkのCLI/TUI骨組みを作成（vibedoveエントリ）", "status": "Done", "createdAt": "2025-09-01T00:00:00Z", "updatedAt": "2025-09-01T12:35:56.567Z"},
-
-    {"id": "h3f9k1z", "title": "設定読み込み実装（~/.vibedove/config.json・デフォルト込み）", "status": "Done", "createdAt": "2025-09-01T00:00:00Z", "updatedAt": "2025-09-02T00:00:00Z", "description": "adasfほげ", "branch": "vd/task/h3f9k1z-vibedoveconfigjson", "worktreePath": "/var/folders/wz/15t3j8s517vgl5h5txn16bk40000gq/T/vibedove/worktrees/vd-h3f9k1z-vibedoveconfigjson", "baseBranch": "main"},
-    {"id": "r7d4v0q", "title": "ボードI/O実装（./.vibedove/board.jsonの読み書き・自動保存）", "status": "Done", "createdAt": "2025-09-01T00:00:00Z", "updatedAt": "2025-09-02T00:00:00Z"},
-    {"id": "m2n5c8x", "title": "短ID生成・slug生成ユーティリティ実装", "status": "Done", "createdAt": "2025-09-01T00:00:00Z", "updatedAt": "2025-09-02T00:00:00Z"},
-    {"id": "y4b6t1p", "title": "ブランチ命名/ベース解決ロジック実装（vd/task/<id>-<slug>）", "status": "Done", "createdAt": "2025-09-01T00:00:00Z", "updatedAt": "2025-09-02T00:00:00Z"},
-    {"id": "k3v7s9a", "title": "worktree管理（TMPDIR/vibedove/worktrees への作成/削除）", "status": "Done", "createdAt": "2025-09-01T00:00:00Z", "updatedAt": "2025-09-02T00:00:00Z"},
-
-    {"id": "d6c4p1m", "title": "TUI: 5カラムボード表示＆基本ナビゲーション（h/l, j/k）", "status": "Done", "createdAt": "2025-09-01T00:00:00Z", "updatedAt": "2025-09-02T00:00:00Z"},
-    {"id": "z7x3n8w", "title": "TUI: キーバインド実装（n,s,p,d,x,r,?,q／詳細で戻しt・編集セレクタe）", "status": "In Progress", "createdAt": "2025-09-01T00:00:00Z", "updatedAt": "2025-09-02T00:00:00Z"},
-
-    {"id": "q9l2j5u", "title": "PR作成（gh CLI）でIn Reviewへ自動遷移", "status": "To Do", "createdAt": "2025-09-01T00:00:00Z", "updatedAt": "2025-09-01T00:00:00Z"},
-    {"id": "u5h2g9e", "title": "エラーハンドリング/ロールバック（git/worktree失敗時の片付け）", "status": "To Do", "createdAt": "2025-09-01T00:00:00Z", "updatedAt": "2025-09-01T00:00:00Z"},
-    {"id": "t0k9w2e", "title": "CLI補助コマンド実装（new/start/pr/done/cancel)", "description": "", "status": "To Do", "createdAt": "2025-09-01T00:00:00Z", "updatedAt": "2025-09-02T00:00:00Z"},
-
-    {"id": "e1d2t3l", "title": "TUI: 詳細表示＋編集セレクタ（e, ink-select-input）", "status": "Done", "createdAt": "2025-09-02T00:00:00Z", "updatedAt": "2025-09-02T00:00:00Z"},
-    {"id": "d3e4l5t", "title": "TUI: タスク削除（Delete/Backspace）実装", "status": "Done", "createdAt": "2025-09-02T00:00:00Z", "updatedAt": "2025-09-02T00:00:00Z"},
-    {"id": "s1t2a3r", "title": "TUI: 着手（s）でブランチ+worktree作成", "status": "Done", "createdAt": "2025-09-02T00:00:00Z", "updatedAt": "2025-09-02T00:00:00Z"},
-    {"id": "d1o2n3e", "title": "TUI: Done（d）でworktree削除", "status": "Done", "createdAt": "2025-09-02T00:00:00Z", "updatedAt": "2025-09-02T00:00:00Z"},
-    {"id": "b1a2c3k", "title": "TUI: In Progress→To Do 戻し（t）", "status": "Done", "createdAt": "2025-09-02T00:00:00Z", "updatedAt": "2025-09-02T00:00:00Z"},
-    {"id": "k3e2e1p", "title": "TUI: 編集時の詳細画面維持・Enter制御修正", "status": "Done", "createdAt": "2025-09-02T00:00:00Z", "updatedAt": "2025-09-02T00:00:00Z"},
-    {"id": "c9f8g7h", "title": "Config: cで生成・rで再読込（ヘッダー表示含む）", "status": "Done", "createdAt": "2025-09-02T00:00:00Z", "updatedAt": "2025-09-02T00:00:00Z"},
-
-    {"id": "x9c8a7n", "title": "TUI: Cancelled（x）への遷移とworktree削除", "status": "To Do", "createdAt": "2025-09-02T00:00:00Z", "updatedAt": "2025-09-02T00:00:00Z"}
+    {
+      "id": "v2d9k3a",
+      "title": "MVP仕様をdocsに作成・確定",
+      "status": "Done",
+      "createdAt": "2025-09-01T00:00:00Z",
+      "updatedAt": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "s8m1j4q",
+      "title": "実装計画をboard.jsonへ反映（ドッグフーディング開始）",
+      "status": "Done",
+      "createdAt": "2025-09-01T00:00:00Z",
+      "updatedAt": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "k3fz9ta",
+      "title": "Bun+InkのCLI/TUI骨組みを作成（vibedoveエントリ）",
+      "status": "Done",
+      "createdAt": "2025-09-01T00:00:00Z",
+      "updatedAt": "2025-09-01T12:35:56.567Z"
+    },
+    {
+      "id": "h3f9k1z",
+      "title": "設定読み込み実装（~/.vibedove/config.json・デフォルト込み）",
+      "status": "Done",
+      "createdAt": "2025-09-01T00:00:00Z",
+      "updatedAt": "2025-09-02T00:00:00Z",
+      "description": "adasfほげ",
+      "branch": "vd/task/h3f9k1z-vibedoveconfigjson",
+      "worktreePath": "/var/folders/wz/15t3j8s517vgl5h5txn16bk40000gq/T/vibedove/worktrees/vd-h3f9k1z-vibedoveconfigjson",
+      "baseBranch": "main"
+    },
+    {
+      "id": "r7d4v0q",
+      "title": "ボードI/O実装（./.vibedove/board.jsonの読み書き・自動保存）",
+      "status": "Done",
+      "createdAt": "2025-09-01T00:00:00Z",
+      "updatedAt": "2025-09-02T00:00:00Z"
+    },
+    {
+      "id": "m2n5c8x",
+      "title": "短ID生成・slug生成ユーティリティ実装",
+      "status": "Done",
+      "createdAt": "2025-09-01T00:00:00Z",
+      "updatedAt": "2025-09-02T00:00:00Z"
+    },
+    {
+      "id": "y4b6t1p",
+      "title": "ブランチ命名/ベース解決ロジック実装（vd/task/<id>-<slug>）",
+      "status": "Done",
+      "createdAt": "2025-09-01T00:00:00Z",
+      "updatedAt": "2025-09-02T00:00:00Z"
+    },
+    {
+      "id": "k3v7s9a",
+      "title": "worktree管理（TMPDIR/vibedove/worktrees への作成/削除）",
+      "status": "Done",
+      "createdAt": "2025-09-01T00:00:00Z",
+      "updatedAt": "2025-09-02T00:00:00Z"
+    },
+    {
+      "id": "d6c4p1m",
+      "title": "TUI: 5カラムボード表示＆基本ナビゲーション（h/l, j/k）",
+      "status": "Done",
+      "createdAt": "2025-09-01T00:00:00Z",
+      "updatedAt": "2025-09-02T00:00:00Z"
+    },
+    {
+      "id": "z7x3n8w",
+      "title": "TUI: キーバインド実装（n,s,p,d,x,r,?,q／詳細で戻しt・編集セレクタe）",
+      "status": "To Do",
+      "createdAt": "2025-09-01T00:00:00Z",
+      "updatedAt": "2025-09-01T23:13:12.802Z"
+    },
+    {
+      "id": "q9l2j5u",
+      "title": "PR作成（gh CLI）でIn Reviewへ自動遷移",
+      "status": "To Do",
+      "createdAt": "2025-09-01T00:00:00Z",
+      "updatedAt": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "u5h2g9e",
+      "title": "エラーハンドリング/ロールバック（git/worktree失敗時の片付け）",
+      "status": "To Do",
+      "createdAt": "2025-09-01T00:00:00Z",
+      "updatedAt": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "t0k9w2e",
+      "title": "CLI補助コマンド実装（new/start/pr/done/cancel)",
+      "description": "",
+      "status": "To Do",
+      "createdAt": "2025-09-01T00:00:00Z",
+      "updatedAt": "2025-09-02T00:00:00Z"
+    },
+    {
+      "id": "e1d2t3l",
+      "title": "TUI: 詳細表示＋編集セレクタ（e, ink-select-input）",
+      "status": "Done",
+      "createdAt": "2025-09-02T00:00:00Z",
+      "updatedAt": "2025-09-02T00:00:00Z"
+    },
+    {
+      "id": "d3e4l5t",
+      "title": "TUI: タスク削除（Delete/Backspace）実装",
+      "status": "Done",
+      "createdAt": "2025-09-02T00:00:00Z",
+      "updatedAt": "2025-09-02T00:00:00Z"
+    },
+    {
+      "id": "s1t2a3r",
+      "title": "TUI: 着手（s）でブランチ+worktree作成",
+      "status": "Done",
+      "createdAt": "2025-09-02T00:00:00Z",
+      "updatedAt": "2025-09-02T00:00:00Z"
+    },
+    {
+      "id": "d1o2n3e",
+      "title": "TUI: Done（d）でworktree削除",
+      "status": "Done",
+      "createdAt": "2025-09-02T00:00:00Z",
+      "updatedAt": "2025-09-02T00:00:00Z"
+    },
+    {
+      "id": "b1a2c3k",
+      "title": "TUI: In Progress→To Do 戻し（t）",
+      "status": "Done",
+      "createdAt": "2025-09-02T00:00:00Z",
+      "updatedAt": "2025-09-02T00:00:00Z"
+    },
+    {
+      "id": "k3e2e1p",
+      "title": "TUI: 編集時の詳細画面維持・Enter制御修正",
+      "status": "Done",
+      "createdAt": "2025-09-02T00:00:00Z",
+      "updatedAt": "2025-09-02T00:00:00Z"
+    },
+    {
+      "id": "c9f8g7h",
+      "title": "Config: cで生成・rで再読込（ヘッダー表示含む）",
+      "status": "Done",
+      "createdAt": "2025-09-02T00:00:00Z",
+      "updatedAt": "2025-09-02T00:00:00Z"
+    },
+    {
+      "id": "x9c8a7n",
+      "title": "TUI: Cancelled（x）への遷移とworktree削除",
+      "status": "To Do",
+      "createdAt": "2025-09-02T00:00:00Z",
+      "updatedAt": "2025-09-02T00:00:00Z"
+    }
   ]
 }
