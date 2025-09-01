@@ -7,7 +7,7 @@ import {loadBoard, saveBoard} from '../board';
 import {shortId} from '../utils/id';
 import {loadConfig, type Config, saveConfig, DEFAULTS, resolveTmpRoot} from '../config';
 import path from 'path';
-import {createBranch, addWorktree, currentBranch} from '../git';
+import {createBranch, addWorktree, currentBranch, removeWorktree} from '../git';
 import {slugify} from '../utils/slug';
 
 type Cursor = {col: number; row: number};
@@ -211,7 +211,15 @@ export function App() {
       return;
     }
     if (input === 'p') toast('PR create: not implemented yet');
-    if (input === 'd') toast('Done: not implemented yet');
+    if (input === 'd') {
+      if (!board || !grouped) return;
+      const list = grouped[STATUSES[cursor.col]];
+      if (list.length === 0) return;
+      const row = Math.min(cursor.row, list.length - 1);
+      const target = inspecting.active && inspecting.task ? inspecting.task : list[row];
+      void completeTask(board, target, setBoard, setInspecting, setCursor, setMessage).catch((e) => setMessage(String(e?.message ?? e)));
+      return;
+    }
     if (input === 'x') toast('Cancel: not implemented yet');
   });
 
@@ -500,4 +508,39 @@ async function deleteTask(board: Board, task: Task, setBoard: (b: Board) => void
   setBoard(next);
   const rows = next.tasks.filter((t) => t.status === STATUSES[colIndex]).length;
   setCursor((c) => ({col: colIndex, row: Math.min(c.row, Math.max(0, rows - 1))}));
+}
+
+async function completeTask(
+  board: Board,
+  task: Task,
+  setBoard: (b: Board) => void,
+  setInspecting: (s: {active: boolean; task: Task | null}) => void,
+  setCursor: (c: Cursor) => void,
+  setMessage: (m: string) => void
+) {
+  // Remove worktree if exists per spec
+  if (task.worktreePath) {
+    try {
+      await removeWorktree(task.worktreePath);
+    } catch (e) {
+      setMessage(`Failed to remove worktree: ${String((e as any)?.message ?? e)}`);
+    }
+  }
+
+  const now = new Date().toISOString();
+  const next: Board = {
+    ...board,
+    tasks: board.tasks.map((t) =>
+      t.id === task.id ? { ...t, status: 'Done', worktreePath: undefined, updatedAt: now } : t
+    ),
+  };
+  await saveBoard(next);
+  setBoard(next);
+  const col = STATUSES.indexOf('Done');
+  const inCol = next.tasks.filter((t) => t.status === 'Done');
+  const row = Math.max(0, inCol.findIndex((t) => t.id === task.id));
+  setCursor({col, row});
+  const updated = next.tasks.find((t) => t.id === task.id) ?? null;
+  setInspecting({active: true, task: updated});
+  setMessage(`Marked ${task.id} as Done`);
 }

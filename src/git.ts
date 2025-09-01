@@ -29,3 +29,12 @@ export async function addWorktree(dir: string, branch: string, cwd = process.cwd
     throw new Error(`git worktree add failed: ${stderr ?? ''}`);
   }
 }
+
+export async function removeWorktree(dir: string, cwd = process.cwd()): Promise<void> {
+  await $`git -C ${cwd} worktree prune`.nothrow();
+  const p = await $`git -C ${cwd} worktree remove ${dir} --force`.nothrow();
+  if (p.exitCode !== 0) {
+    // Fallback: force delete directory if git command failed
+    await fs.rm(dir, {recursive: true, force: true});
+  }
+}
