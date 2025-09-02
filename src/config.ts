@@ -66,8 +66,8 @@ export function resolveTmpRoot(cfg: Config): string {
 export async function loadProjectConfig(
 	cwd = process.cwd(),
 ): Promise<ProjectConfig> {
-	const root = await repoTopLevel(cwd);
-	const file = path.join(projectStorageDir(root), "config.json");
+	const id = await repoIdentity(cwd);
+	const file = path.join(projectStorageDir(id), "config.json");
 	try {
 		const data = await fs.readFile(file, "utf8");
 		const parsed = JSON.parse(data);
@@ -89,9 +89,12 @@ function projectStorageDir(repoRoot: string): string {
 	);
 }
 
-async function repoTopLevel(cwd: string): Promise<string> {
-	const p = await $`git -C ${cwd} rev-parse --show-toplevel`.nothrow();
-	if (p.exitCode === 0) return (await p.text()).trim();
+async function repoIdentity(cwd: string): Promise<string> {
+	// Use a worktree-stable identifier for per-project storage
+	const common = await $`git -C ${cwd} rev-parse --git-common-dir`.nothrow();
+	if (common.exitCode === 0) return (await common.text()).trim();
+	const top = await $`git -C ${cwd} rev-parse --show-toplevel`.nothrow();
+	if (top.exitCode === 0) return (await top.text()).trim();
 	return cwd;
 }
 

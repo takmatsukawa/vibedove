@@ -10,8 +10,8 @@ async function ensureDir(p: string) {
 }
 
 export async function loadBoard(cwd = process.cwd()): Promise<Board> {
-	const root = await repoTopLevel(cwd);
-	const sharedPath = sharedBoardPath(root);
+	const repoId = await repoIdentity(cwd);
+	const sharedPath = sharedBoardPath(repoId);
 
 	// Use shared board at ~/.vibedove/projects/<project>/board.json
 	try {
@@ -29,9 +29,9 @@ export async function saveBoard(
 	board: Board,
 	cwd = process.cwd(),
 ): Promise<void> {
-	const root = await repoTopLevel(cwd);
+	const repoId = await repoIdentity(cwd);
 	const json = JSON.stringify(board, null, 2);
-	const file = sharedBoardPath(root);
+	const file = sharedBoardPath(repoId);
 	await ensureDir(path.dirname(file));
 	await fs.writeFile(file, json, "utf8");
 }
@@ -49,12 +49,14 @@ export function tasksByStatus(board: Board): Record<Status, Task[]> {
 }
 
 // Helpers to share board.json across git worktrees of the same repo
-async function repoTopLevel(cwd: string): Promise<string> {
-	const p = await $`git -C ${cwd} rev-parse --show-toplevel`.nothrow();
-	if (p.exitCode === 0) {
-		const out = await p.text();
-		return out.trim();
-	}
+async function repoIdentity(cwd: string): Promise<string> {
+	// Prefer a stable identifier shared across worktrees
+	const common = await $`git -C ${cwd} rev-parse --git-common-dir`.nothrow();
+	if (common.exitCode === 0) return (await common.text()).trim();
+
+	// Fallback to repo toplevel (non-worktree or non-git directories)
+	const top = await $`git -C ${cwd} rev-parse --show-toplevel`.nothrow();
+	if (top.exitCode === 0) return (await top.text()).trim();
 	return cwd;
 }
 
