@@ -1,20 +1,22 @@
 {
-  "name": "vibedove",
-  "module": "index.tsx",
-  "type": "module",
-  "scripts": {
-    "start": "bun index.tsx"
-  },
-  "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
-  },
-  "dependencies": {
-    "ink": "^6.2.3",
-    "ink-select-input": "^6.2.0",
-    "ink-text-input": "^6.0.0",
-    "react": "^19.1.1"
-  }
+	"name": "vibedove",
+	"module": "index.tsx",
+	"type": "module",
+	"scripts": {
+		"start": "bun index.tsx",
+		"format": "biome check --write ."
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.2.2",
+		"@types/bun": "latest"
+	},
+	"peerDependencies": {
+		"typescript": "^5"
+	},
+	"dependencies": {
+		"ink": "^6.2.3",
+		"ink-select-input": "^6.2.0",
+		"ink-text-input": "^6.0.0",
+		"react": "^19.1.1"
+	}
 }

@@ -1,7 +1,6 @@
 #!/usr/bin/env bun
-import React from 'react';
-import {render} from 'ink';
-import {App} from './src/tui/App';
+import { render } from "ink";
+import React from "react";
+import { App } from "./src/tui/App";
 
 render(<App />);
-
