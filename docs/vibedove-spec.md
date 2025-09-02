@@ -41,6 +41,7 @@
 - キー:
   - `setupScript` (string|null): worktree 作成直後に実行するスクリプト。
     - 例: "bun install" / "npm install" / "pnpm i && bun run build"
+    - 実行ディレクトリ: 生成した worktree のルート（`cd <worktree> && <script>` 相当）
     - 空/未設定なら何もしない。
 
 ## データ保存

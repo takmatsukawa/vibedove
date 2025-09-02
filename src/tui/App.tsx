@@ -533,7 +533,8 @@ async function startTask(
     const pcfg: ProjectConfig = await loadProjectConfig();
     if (pcfg.setupScript && pcfg.setupScript.trim().length > 0) {
       // Execute inside the new worktree directory
-      const proc = await $({cwd: wtDir})`bash -lc ${pcfg.setupScript}`.nothrow();
+      const cmd = `cd "${wtDir}" && ${pcfg.setupScript}`;
+      const proc = await $`bash -lc ${cmd}`.nothrow();
       if (proc.exitCode !== 0) {
         const stderr = (await proc.stderr?.text?.()) || (await proc.stdout?.text?.()) || '';
         setupNote = `setup failed: ${stderr.trim()}`;
