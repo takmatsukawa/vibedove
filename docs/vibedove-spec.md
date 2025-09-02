@@ -37,8 +37,11 @@
 備考: 設定ファイルはTUIから生成しません（必要なら手動で作成）。
 
 ## データ保存
-- ボード: リポジトリ直下 `./.vibedove/board.json`（個人利用前提・Gitにはコミットしない）
-  - `/.vibedove/` は `.gitignore` に登録し、`board.json` は共有しない。
+- ボード: `~/.vibedove/projects/<repo-path-sanitized>/board.json`
+  - 同一リポジトリの全worktreeで共有（個人PC内のみ）。
+  - 初回起動時に自動生成。以後このパスのみ読み書き。
+  - プロジェクト配下（`./.vibedove/`）には何も作らない。
+  - Git管理対象外。
 - スキーマ(MVP):
 ```jsonc
 {

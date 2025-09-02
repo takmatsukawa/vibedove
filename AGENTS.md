@@ -112,6 +112,6 @@ For more information, read the Bun API docs in `node_modules/bun-types/docs/**.m
 
 ## Vibedove Development
 
-- Board-driven workflow: Use `./.vibedove/board.json` as the Kanban source of truth locally (personal use). Do not commit it; keep `/.vibedove/` in `.gitignore`.
+- Board-driven workflow: Use a per-repo personal board at `~/.vibedove/projects/<repo>/board.json` so all local worktrees share the same state. Do not commit any project-side `.vibedove/`.
 - Spec location: The MVP specification is documented in `docs/vibedove-spec.md`. Treat it as authoritative; update the spec alongside behavior changes.
 - TUI: Run `bun index.tsx` to open the Ink-based board for interactive development and validation.

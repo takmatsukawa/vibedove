@@ -1,6 +1,8 @@
 import {promises as fs} from 'fs';
+import os from 'os';
 import path from 'path';
-import {BOARD_PATH} from './constants';
+// board.json is stored per-repo under ~/.vibedove/projects/<repo>/board.json
+import { $ } from 'bun';
 import type {Board, Status, Task} from './types';
 
 async function ensureDir(p: string) {
@@ -8,23 +10,26 @@ async function ensureDir(p: string) {
 }
 
 export async function loadBoard(cwd = process.cwd()): Promise<Board> {
-  const file = path.join(cwd, BOARD_PATH);
+  const root = await repoTopLevel(cwd);
+  const sharedPath = sharedBoardPath(root);
+
+  // Use shared board at ~/.vibedove/projects/<project>/board.json
   try {
-    const data = await fs.readFile(file, 'utf8');
+    const data = await fs.readFile(sharedPath, 'utf8');
     return JSON.parse(data) as Board;
-  } catch {
-    // initialize empty board
-    const board: Board = {version: 1, tasks: []};
-    await saveBoard(board, cwd);
-    return board;
-  }
+  } catch {}
+
+  // Initialize empty board at shared location
+  const board: Board = {version: 1, tasks: []};
+  await saveBoard(board, cwd);
+  return board;
 }
 
 export async function saveBoard(board: Board, cwd = process.cwd()): Promise<void> {
-  const dir = path.dirname(path.join(cwd, BOARD_PATH));
-  await ensureDir(dir);
-  const file = path.join(cwd, BOARD_PATH);
+  const root = await repoTopLevel(cwd);
   const json = JSON.stringify(board, null, 2);
+  const file = sharedBoardPath(root);
+  await ensureDir(path.dirname(file));
   await fs.writeFile(file, json, 'utf8');
 }
 
@@ -40,3 +45,22 @@ export function tasksByStatus(board: Board): Record<Status, Task[]> {
   return grouped;
 }
 
+// Helpers to share board.json across git worktrees of the same repo
+async function repoTopLevel(cwd: string): Promise<string> {
+  const p = await $`git -C ${cwd} rev-parse --show-toplevel`.nothrow();
+  if (p.exitCode === 0) {
+    const out = await p.text();
+    return out.trim();
+  }
+  return cwd;
+}
+
+function sharedBoardPath(repoRoot: string): string {
+  const safe = sanitizePathForDir(repoRoot);
+  return path.join(os.homedir(), '.vibedove', 'projects', safe, 'board.json');
+}
+
+function sanitizePathForDir(p: string): string {
+  // Replace path separators and characters that are problematic in folder names
+  return p.replace(/[:/\\]/g, '_');
+}
