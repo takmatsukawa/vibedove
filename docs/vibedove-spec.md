@@ -34,10 +34,11 @@
   "editor": "nvim"
 }
 ```
-- 生成: TUI 上で `c` キーで現在の設定（未読込時は既定値）を保存して生成できる。
+備考: 設定ファイルはTUIから生成しません（必要なら手動で作成）。
 
 ## データ保存
-- ボード: リポジトリ直下 `./.vibedove/board.json`
+- ボード: リポジトリ直下 `./.vibedove/board.json`（個人利用前提・Gitにはコミットしない）
+  - `/.vibedove/` は `.gitignore` に登録し、`board.json` は共有しない。
 - スキーマ(MVP):
 ```jsonc
 {
