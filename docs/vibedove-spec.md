@@ -103,7 +103,7 @@
     - 説明編集開始: `e`（ink-text-input による単一行編集、Enterで確定、Escで取消）
     - 備考: 端末によっては Shift+Enter を区別できない場合があります。その場合の代替操作は将来検討。
   - 状態移動:
-    - In Progress → To Do: `t`（詳細表示中または一覧選択中）
+    - In Progress → To Do: `c`（詳細表示中または一覧選択中）
   - 新規作成: `n`
   - 外部エディタ: `o`（`config.editor` または `$EDITOR` 使用、worktree があればそこを開く）
   - 削除: `Delete` / `Backspace`（確認ダイアログあり）

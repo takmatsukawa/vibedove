@@ -6,7 +6,7 @@ import {STATUSES} from '../constants';
 import type {Board, Status, Task} from '../types';
 import {loadBoard, saveBoard} from '../board';
 import {shortId} from '../utils/id';
-import {loadConfig, type Config, saveConfig, DEFAULTS, resolveTmpRoot} from '../config';
+import {loadConfig, type Config, resolveTmpRoot} from '../config';
 import path from 'path';
 import {createBranch, addWorktree, currentBranch, removeWorktree} from '../git';
 import { $ } from 'bun';
@@ -132,7 +132,7 @@ export function App() {
       }
 
       // Not editing: handle inspect controls
-      if (input === 't') {
+      if (input === 'c') {
         if (!board || !inspecting.task) return;
         if (inspecting.task.status === 'In Progress') {
           void changeTaskStatus(board, inspecting.task.id, 'To Do', setBoard, setCursor, setInspecting);
@@ -173,7 +173,7 @@ export function App() {
     if (key.downArrow || input === 'j') setCursor((c) => ({...c, row: c.row + 1}));
 
     // Actions
-    if (input === 't') {
+    if (input === 'c') {
       // Also allow moving In Progress -> To Do from list view
       if (!board || !grouped) return;
       const list = grouped[STATUSES[cursor.col]];
@@ -186,16 +186,6 @@ export function App() {
       return;
     }
     if (input === 'r') reload(setBoard, setConfig);
-    if (input === 'c') {
-      // Generate ~/.vibedove/config.json with current or default values
-      const cfg = config ?? DEFAULTS;
-      void (async () => {
-        await saveConfig(cfg);
-        const reloaded = await loadConfig();
-        setConfig(reloaded);
-      })();
-      return;
-    }
     if (input === 'n') setCreating({active: true, buf: ''});
     if (input === 'o') {
       if (!config) return;
