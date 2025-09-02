@@ -8,7 +8,7 @@ import {loadBoard, saveBoard} from '../board';
 import {shortId} from '../utils/id';
 import {loadConfig, type Config, resolveTmpRoot, loadProjectConfig, type ProjectConfig} from '../config';
 import path from 'path';
-import {createBranch, addWorktree, currentBranch, removeWorktree} from '../git';
+import {createBranch, addWorktree, currentBranch, removeWorktree, deleteBranch} from '../git';
 import { $ } from 'bun';
 import {slugify} from '../utils/slug';
 
@@ -107,7 +107,7 @@ export function App() {
       if (input === 'y' || input === 'Y') {
         const t = deleting.task;
         setDeleting({active: false, task: null});
-        if (t && board) void deleteTask(board, t, setBoard, setCursor, cursor.col);
+        if (t && board) void deleteTask(board, t, setBoard, setCursor, cursor.col, setMessage);
         return;
       }
       return; // ignore other keys while confirming
@@ -565,7 +565,31 @@ async function startTask(
   setMessage(`Started ${task.id} on ${branch}${note}`);
 }
 
-async function deleteTask(board: Board, task: Task, setBoard: (b: Board) => void, setCursor: (c: Cursor) => void, colIndex: number) {
+async function deleteTask(
+  board: Board,
+  task: Task,
+  setBoard: (b: Board) => void,
+  setCursor: (c: Cursor) => void,
+  colIndex: number,
+  setMessage: (m: string) => void
+) {
+  // Attempt to remove worktree and branch if present
+  const notes: string[] = [];
+  if (task.worktreePath) {
+    try {
+      await removeWorktree(task.worktreePath);
+    } catch (e) {
+      notes.push(`worktree remove failed: ${String((e as any)?.message ?? e)}`);
+    }
+  }
+  if (task.branch) {
+    try {
+      await deleteBranch(task.branch);
+    } catch (e) {
+      notes.push(`branch delete failed: ${String((e as any)?.message ?? e)}`);
+    }
+  }
+
   const next: Board = {
     ...board,
     tasks: board.tasks.filter((t) => t.id !== task.id),
@@ -574,6 +598,7 @@ async function deleteTask(board: Board, task: Task, setBoard: (b: Board) => void
   setBoard(next);
   const rows = next.tasks.filter((t) => t.status === STATUSES[colIndex]).length;
   setCursor((c) => ({col: colIndex, row: Math.min(c.row, Math.max(0, rows - 1))}));
+  setMessage(notes.length ? `Deleted ${task.id} (${notes.join(' • ')})` : `Deleted ${task.id}`);
 }
 
 async function completeTask(

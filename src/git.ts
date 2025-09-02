@@ -39,3 +39,11 @@ export async function removeWorktree(dir: string, cwd = process.cwd()): Promise<
     await fs.rm(dir, {recursive: true, force: true});
   }
 }
+
+export async function deleteBranch(name: string, cwd = process.cwd()): Promise<void> {
+  const p = await $`git -C ${cwd} branch -D ${name}`.nothrow();
+  if (p.exitCode !== 0) {
+    const stderr = await p.stderr?.text?.();
+    throw new Error(`git branch -D failed: ${stderr ?? ''}`);
+  }
+}

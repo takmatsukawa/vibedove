@@ -117,7 +117,8 @@
     - In Progress → To Do: `c`（詳細表示中または一覧選択中）
   - 新規作成: `n`
   - 外部エディタ: `o`（`config.editor` または `$EDITOR` 使用、worktree があればそこを開く）
-  - 削除: `Delete` / `Backspace`（確認ダイアログあり）
+- 削除: `Delete` / `Backspace`（確認ダイアログあり）
+  - 動作: タスク削除時に、関連する worktree とローカルブランチも削除する。
   - 着手（worktree+ブランチ作成）: `s`
   - PR作成（gh 使用・In Reviewへ）: `p`
   - 完了: `d`
