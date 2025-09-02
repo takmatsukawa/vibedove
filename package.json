@@ -3,9 +3,14 @@
   "module": "index.tsx",
   "type": "module",
   "scripts": {
-    "start": "bun index.tsx"
+    "start": "bun index.tsx",
+    "lint": "bunx biome check .",
+    "lint:fix": "bunx biome check . --write",
+    "fmt": "bunx biome format .",
+    "fmt:fix": "bunx biome format . --write"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.2.2",
     "@types/bun": "latest"
   },
   "peerDependencies": {
