@@ -36,6 +36,13 @@
 ```
 備考: 設定ファイルはTUIから生成しません（必要なら手動で作成）。
 
+### プロジェクト設定（個別）
+- 位置: `~/.vibedove/projects/<repo-path-sanitized>/config.json`
+- キー:
+  - `setupScript` (string|null): worktree 作成直後に実行するスクリプト。
+    - 例: "bun install" / "npm install" / "pnpm i && bun run build"
+    - 空/未設定なら何もしない。
+
 ## データ保存
 - ボード: `~/.vibedove/projects/<repo-path-sanitized>/board.json`
   - 同一リポジトリの全worktreeで共有（個人PC内のみ）。

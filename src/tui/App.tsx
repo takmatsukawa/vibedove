@@ -6,7 +6,7 @@ import {STATUSES} from '../constants';
 import type {Board, Status, Task} from '../types';
 import {loadBoard, saveBoard} from '../board';
 import {shortId} from '../utils/id';
-import {loadConfig, type Config, resolveTmpRoot} from '../config';
+import {loadConfig, type Config, resolveTmpRoot, loadProjectConfig, type ProjectConfig} from '../config';
 import path from 'path';
 import {createBranch, addWorktree, currentBranch, removeWorktree} from '../git';
 import { $ } from 'bun';
@@ -527,6 +527,24 @@ async function startTask(
   await createBranch(branch, base);
   await addWorktree(wtDir, branch);
 
+  // Run per-project setup script if configured
+  let setupNote: string | null = null;
+  try {
+    const pcfg: ProjectConfig = await loadProjectConfig();
+    if (pcfg.setupScript && pcfg.setupScript.trim().length > 0) {
+      // Execute inside the new worktree directory
+      const proc = await $({cwd: wtDir})`bash -lc ${pcfg.setupScript}`.nothrow();
+      if (proc.exitCode !== 0) {
+        const stderr = (await proc.stderr?.text?.()) || (await proc.stdout?.text?.()) || '';
+        setupNote = `setup failed: ${stderr.trim()}`;
+      } else {
+        setupNote = 'setup OK';
+      }
+    }
+  } catch (e) {
+    setupNote = `setup error: ${String((e as any)?.message ?? e)}`;
+  }
+
   const now = new Date().toISOString();
   const next: Board = {
     ...board,
@@ -543,7 +561,8 @@ async function startTask(
   const inProg = next.tasks.filter((t) => t.status === 'In Progress');
   const row = Math.max(0, inProg.findIndex((t) => t.id === task.id));
   setCursor({col, row});
-  setMessage(`Started ${task.id} on ${branch}`);
+  const note = setupNote ? ` • ${setupNote}` : '';
+  setMessage(`Started ${task.id} on ${branch}${note}`);
 }
 
 async function deleteTask(board: Board, task: Task, setBoard: (b: Board) => void, setCursor: (c: Cursor) => void, colIndex: number) {
