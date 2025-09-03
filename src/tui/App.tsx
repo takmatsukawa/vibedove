@@ -32,10 +32,12 @@ function Column({
 	title,
 	tasks,
 	selected,
+	active,
 }: {
 	title: string;
 	tasks: Task[];
 	selected: number;
+	active: boolean;
 }) {
 	return (
 		<Box flexDirection="column" width={28} marginRight={2}>
@@ -43,7 +45,7 @@ function Column({
 			<Box
 				flexDirection="column"
 				borderStyle="round"
-				borderColor="gray"
+				borderColor={active ? "green" : "gray"}
 				paddingX={1}
 				paddingY={0}
 			>
@@ -246,6 +248,10 @@ export function App() {
 						const nextRow = Math.min(cursor.row, list.length - 1);
 						setCursor({ col: nextCol, row: nextRow });
 						setInspecting({ active: true, task: list[nextRow] });
+					} else {
+						// Move into an empty column: close detail automatically
+						setCursor({ col: nextCol, row: 0 });
+						setInspecting({ active: false, task: null });
 					}
 					return;
 				}
@@ -256,6 +262,10 @@ export function App() {
 						const nextRow = Math.min(cursor.row, list.length - 1);
 						setCursor({ col: nextCol, row: nextRow });
 						setInspecting({ active: true, task: list[nextRow] });
+					} else {
+						// Move into an empty column: close detail automatically
+						setCursor({ col: nextCol, row: 0 });
+						setInspecting({ active: false, task: null });
 					}
 					return;
 				}
@@ -528,6 +538,7 @@ export function App() {
 						title={`${s} (${grouped[s].length})`}
 						tasks={grouped[s]}
 						selected={i === cursor.col ? safeRow(grouped[s]) : -1}
+						active={i === cursor.col}
 					/>
 				))}
 			</Box>
