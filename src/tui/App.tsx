@@ -218,6 +218,19 @@ export function App() {
 			}
 
 			// Not editing: handle inspect controls
+			if (input === "s") {
+				if (!board || !inspecting.task || !config) return;
+				void startTask(
+					board,
+					inspecting.task,
+					config,
+					setBoard,
+					setInspecting,
+					setMessage,
+					setCursor,
+				).catch((e) => setMessage(String((e as any)?.message ?? e)));
+				return;
+			}
 			if (input === "c") {
 				if (!board || !inspecting.task) return;
 				if (inspecting.task.status === "In Progress") {
