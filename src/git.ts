@@ -1,6 +1,7 @@
 import { $ } from "bun";
 import { promises as fs } from "fs";
 import path from "path";
+import { logInfo } from "./utils/log";
 
 export async function currentBranch(cwd = process.cwd()): Promise<string> {
 	const out = await $`git -C ${cwd} rev-parse --abbrev-ref HEAD`.text();
@@ -16,16 +17,17 @@ export async function branchExists(
 }
 
 export async function createBranch(
-	name: string,
-	base: string,
-	cwd = process.cwd(),
+    name: string,
+    base: string,
+    cwd = process.cwd(),
 ): Promise<void> {
-	if (await branchExists(name, cwd)) return;
-	const p = await $`git -C ${cwd} branch ${name} ${base}`.nothrow();
-	if (p.exitCode !== 0) {
-		const stderr = await p.stderr?.text?.();
-		throw new Error(`git branch failed: ${stderr ?? ""}`);
-	}
+    if (await branchExists(name, cwd)) return;
+    const p = await $`git -C ${cwd} branch ${name} ${base}`.nothrow();
+    if (p.exitCode !== 0) {
+        const stderr = await p.stderr?.text?.();
+        throw new Error(`git branch failed: ${stderr ?? ""}`);
+    }
+    void logInfo("git.branch.create", { name, base, cwd });
 }
 
 export async function addWorktree(
@@ -33,13 +35,14 @@ export async function addWorktree(
 	branch: string,
 	cwd = process.cwd(),
 ): Promise<void> {
-	await fs.mkdir(path.dirname(dir), { recursive: true });
-	// Create worktree and check out files for the given branch
-	const p = await $`git -C ${cwd} worktree add ${dir} ${branch}`.nothrow();
-	if (p.exitCode !== 0) {
-		const stderr = await p.stderr?.text?.();
-		throw new Error(`git worktree add failed: ${stderr ?? ""}`);
-	}
+    await fs.mkdir(path.dirname(dir), { recursive: true });
+    // Create worktree and check out files for the given branch
+    const p = await $`git -C ${cwd} worktree add ${dir} ${branch}`.nothrow();
+    if (p.exitCode !== 0) {
+        const stderr = await p.stderr?.text?.();
+        throw new Error(`git worktree add failed: ${stderr ?? ""}`);
+    }
+    void logInfo("git.worktree.add", { dir, branch, cwd });
 }
 
 export async function removeWorktree(

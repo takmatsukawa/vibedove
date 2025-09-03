@@ -77,7 +77,7 @@ export async function loadProjectConfig(
 	}
 }
 
-function projectStorageDir(repoRoot: string): string {
+export function projectStorageDir(repoRoot: string): string {
 	return path.join(
 		os.homedir(),
 		".vibedove",
@@ -86,7 +86,7 @@ function projectStorageDir(repoRoot: string): string {
 	);
 }
 
-async function repoIdentity(cwd: string): Promise<string> {
+export async function repoIdentity(cwd: string): Promise<string> {
 	// Use a worktree-stable identifier for per-project storage
 	const common = await $`git -C ${cwd} rev-parse --git-common-dir`.nothrow();
 	if (common.exitCode === 0) {

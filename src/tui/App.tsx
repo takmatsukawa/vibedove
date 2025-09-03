@@ -23,6 +23,7 @@ import {
 import type { Board, Status, Task } from "../types";
 import { shortId } from "../utils/id";
 import { slugify } from "../utils/slug";
+import { logError, logInfo } from "../utils/log";
 
 type Cursor = { col: number; row: number };
 
@@ -698,7 +699,7 @@ async function startTask(
 	}
 	const slug = slugify(task.title);
 	const branch = `${cfg.branchPrefix}/task/${task.id}-${slug}`;
-	const base = cfg.defaultBaseBranch ?? (await currentBranch());
+    const base = cfg.defaultBaseBranch ?? (await currentBranch());
 	const wtDir = path.join(
 		resolveTmpRoot(cfg),
 		`${cfg.branchPrefix}-${task.id}-${slug}`,
@@ -708,26 +709,31 @@ async function startTask(
 
 	await createBranch(branch, base);
 	await addWorktree(wtDir, branch);
+    void logInfo("startTask.start", { id: task.id, title: task.title, branch, base, wtDir });
 
 	// Run per-project setup script if configured
 	let setupNote: string | null = null;
 	try {
-		const pcfg: ProjectConfig = await loadProjectConfig();
-		if (pcfg.setupScript && pcfg.setupScript.trim().length > 0) {
-			// Execute inside the new worktree directory
-			const cmd = `cd "${wtDir}" && ${pcfg.setupScript}`;
-			const proc = await $`bash -lc ${cmd}`.nothrow();
-			if (proc.exitCode !== 0) {
-				const stderr =
-					(await proc.stderr?.text?.()) || (await proc.stdout?.text?.()) || "";
-				setupNote = `setup failed: ${stderr.trim()}`;
-			} else {
-				setupNote = "setup OK";
-			}
-		}
-	} catch (e) {
-		setupNote = `setup error: ${String((e as any)?.message ?? e)}`;
-	}
+        const pcfg: ProjectConfig = await loadProjectConfig();
+        if (pcfg.setupScript && pcfg.setupScript.trim().length > 0) {
+            // Execute inside the new worktree directory
+            const cmd = `cd "${wtDir}" && ${pcfg.setupScript}`;
+            void logInfo("startTask.setup.start", { id: task.id, cmd });
+            const proc = await $`bash -lc ${cmd}`.nothrow();
+            if (proc.exitCode !== 0) {
+                const stderr =
+                    (await proc.stderr?.text?.()) || (await proc.stdout?.text?.()) || "";
+                setupNote = `setup failed: ${stderr.trim()}`;
+                void logError("startTask.setup.fail", { id: task.id, exitCode: proc.exitCode, stderr: stderr.trim() });
+            } else {
+                setupNote = "setup OK";
+                void logInfo("startTask.setup.ok", { id: task.id, exitCode: proc.exitCode });
+            }
+        }
+    } catch (e) {
+        setupNote = `setup error: ${String((e as any)?.message ?? e)}`;
+        void logError("startTask.setup.exception", { id: task.id, error: String((e as any)?.message ?? e) });
+    }
 
 	const now = new Date().toISOString();
 	const next: Board = {
