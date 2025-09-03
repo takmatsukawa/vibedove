@@ -49,7 +49,9 @@ export function tasksByStatus(board: Board): Record<Status, Task[]> {
 // Helpers to share board.json across git worktrees of the same repo
 async function repoIdentity(cwd: string): Promise<string> {
 	// Prefer a stable, absolute identifier shared across worktrees
-	const common = await $`git -C ${cwd} rev-parse --git-common-dir`.quiet().nothrow();
+	const common = await $`git -C ${cwd} rev-parse --git-common-dir`
+		.quiet()
+		.nothrow();
 	if (common.exitCode === 0) {
 		const raw = (await common.text()).trim();
 		const pathMod = require("path");
@@ -60,7 +62,9 @@ async function repoIdentity(cwd: string): Promise<string> {
 					: raw;
 			return normalized;
 		}
-		const top = await $`git -C ${cwd} rev-parse --show-toplevel`.quiet().nothrow();
+		const top = await $`git -C ${cwd} rev-parse --show-toplevel`
+			.quiet()
+			.nothrow();
 		const base = top.exitCode === 0 ? (await top.text()).trim() : cwd;
 		const resolved = pathMod.join(base, raw);
 		const normalized =
@@ -71,7 +75,9 @@ async function repoIdentity(cwd: string): Promise<string> {
 	}
 
 	// Fallback to repo toplevel (non-worktree or non-git directories)
-	const top = await $`git -C ${cwd} rev-parse --show-toplevel`.quiet().nothrow();
+	const top = await $`git -C ${cwd} rev-parse --show-toplevel`
+		.quiet()
+		.nothrow();
 	if (top.exitCode === 0) {
 		const t = (await top.text()).trim();
 		return t;

@@ -14,17 +14,17 @@ import {
 } from "../config";
 import { STATUSES } from "../constants";
 import {
-    addWorktree,
-    createBranch,
-    currentBranch,
-    deleteBranch,
-    mergeBranch,
-    removeWorktree,
+	addWorktree,
+	createBranch,
+	currentBranch,
+	deleteBranch,
+	mergeBranch,
+	removeWorktree,
 } from "../git";
 import type { Board, Status, Task } from "../types";
 import { shortId } from "../utils/id";
-import { slugify } from "../utils/slug";
 import { logError, logInfo } from "../utils/log";
+import { slugify } from "../utils/slug";
 
 type Cursor = { col: number; row: number };
 
@@ -66,14 +66,15 @@ function Column({
 }
 
 function Help() {
-    return (
-        <>
-            <Text>
-                Keys: h/l(←/→) move columns • j/k(↑/↓) select • n new • s start • p PR •
-                m merge+done (detail/In Progress) • d done • x cancel • r refresh • ? help • q quit
-            </Text>
-        </>
-    );
+	return (
+		<>
+			<Text>
+				Keys: h/l(←/→) move columns • j/k(↑/↓) select • n new • s start • p PR •
+				m merge+done (detail/In Progress) • d done • x cancel • r refresh • ?
+				help • q quit
+			</Text>
+		</>
+	);
 }
 
 export function App() {
@@ -153,29 +154,29 @@ export function App() {
 			return; // don't process other keys while creating
 		}
 
-			// Deleting confirm mode
-			if (deleting.active) {
-				if (key.escape || input === "n" || input === "N") {
-					setDeleting({ active: false, task: null });
-					return;
-				}
-				if (input === "y" || input === "Y") {
-					const t = deleting.task;
-					setDeleting({ active: false, task: null });
-					if (t && board)
-						void deleteTask(
-							board,
-							t,
-							setBoard,
-							setCursor,
-							// Use task status column to keep UX consistent across views
-							STATUSES.indexOf(t.status),
-							setMessage,
-						);
-					return;
-				}
-				return; // ignore other keys while confirming
+		// Deleting confirm mode
+		if (deleting.active) {
+			if (key.escape || input === "n" || input === "N") {
+				setDeleting({ active: false, task: null });
+				return;
 			}
+			if (input === "y" || input === "Y") {
+				const t = deleting.task;
+				setDeleting({ active: false, task: null });
+				if (t && board)
+					void deleteTask(
+						board,
+						t,
+						setBoard,
+						setCursor,
+						// Use task status column to keep UX consistent across views
+						STATUSES.indexOf(t.status),
+						setMessage,
+					);
+				return;
+			}
+			return; // ignore other keys while confirming
+		}
 
 		// Merging confirm mode
 		if (merging.active) {
@@ -202,6 +203,62 @@ export function App() {
 
 		// Inspecting mode (floating detail)
 		if (inspecting.active) {
+			// Allow navigating tasks with hjkl/arrow keys while inspecting
+			// Skip when editing title/description or chooser is active
+			if (
+				!editingTitle.active &&
+				!editingDesc.active &&
+				!editChooser &&
+				grouped
+			) {
+				// Horizontal navigation: columns
+				if (key.leftArrow || input === "h") {
+					const nextCol = Math.max(0, cursor.col - 1);
+					const list = grouped[STATUSES[nextCol]];
+					if (list.length > 0) {
+						const nextRow = Math.min(cursor.row, list.length - 1);
+						setCursor({ col: nextCol, row: nextRow });
+						setInspecting({ active: true, task: list[nextRow] });
+					}
+					return;
+				}
+				if (key.rightArrow || input === "l") {
+					const nextCol = Math.min(STATUSES.length - 1, cursor.col + 1);
+					const list = grouped[STATUSES[nextCol]];
+					if (list.length > 0) {
+						const nextRow = Math.min(cursor.row, list.length - 1);
+						setCursor({ col: nextCol, row: nextRow });
+						setInspecting({ active: true, task: list[nextRow] });
+					}
+					return;
+				}
+
+				// Vertical navigation: rows within the column
+				if (key.upArrow || input === "k") {
+					const list = grouped[STATUSES[cursor.col]];
+					if (list.length > 0) {
+						const nextRow = Math.max(
+							0,
+							Math.min(list.length - 1, cursor.row - 1),
+						);
+						setCursor({ col: cursor.col, row: nextRow });
+						setInspecting({ active: true, task: list[nextRow] });
+					}
+					return;
+				}
+				if (key.downArrow || input === "j") {
+					const list = grouped[STATUSES[cursor.col]];
+					if (list.length > 0) {
+						const nextRow = Math.max(
+							0,
+							Math.min(list.length - 1, cursor.row + 1),
+						);
+						setCursor({ col: cursor.col, row: nextRow });
+						setInspecting({ active: true, task: list[nextRow] });
+					}
+					return;
+				}
+			}
 			// Title editing
 			if (editingTitle.active && inspecting.task) {
 				if (key.escape) {
@@ -264,7 +321,9 @@ export function App() {
 					return;
 				}
 				setMerging({ active: true, task: t });
-				setMessage(`Merge ${t.branch} -> ${t.baseBranch} and delete worktree/branch? (y/N)`);
+				setMessage(
+					`Merge ${t.branch} -> ${t.baseBranch} and delete worktree/branch? (y/N)`,
+				);
 				return;
 			}
 			if (input === "e") {
@@ -440,28 +499,9 @@ export function App() {
 				) : showHelp ? (
 					<Help />
 				) : (
-					<>
-						<Text dimColor>
-							Press Enter to view details • n to create • ? for help • q to quit
-						</Text>
-						{grouped[STATUSES[cursor.col]].length > 0 ? (
-							<Text dimColor>
-								Desc preview:{" "}
-								{
-									(
-										grouped[STATUSES[cursor.col]][
-											Math.min(
-												cursor.row,
-												grouped[STATUSES[cursor.col]].length - 1,
-											)
-										].description || ""
-									).split("\n")[0]
-								}
-							</Text>
-						) : (
-							<Text dimColor>—</Text>
-						)}
-					</>
+					<Text dimColor>
+						Press Enter to view details • n to create • ? for help • q to quit
+					</Text>
 				)}
 			</Box>
 			{message ? (
@@ -549,7 +589,7 @@ export function App() {
 					<Text dimColor>
 						{editingDesc.active
 							? "Enter save • Esc cancel"
-							: "Press e to edit • Enter/Esc to close"}
+							: "Press e to edit • hjkl/arrow to switch • Enter/Esc to close"}
 					</Text>
 				</Box>
 			) : null}
@@ -762,7 +802,7 @@ async function startTask(
 	}
 	const slug = slugify(task.title);
 	const branch = `${cfg.branchPrefix}/task/${task.id}-${slug}`;
-    const base = cfg.defaultBaseBranch ?? (await currentBranch());
+	const base = cfg.defaultBaseBranch ?? (await currentBranch());
 	const wtDir = path.join(
 		resolveTmpRoot(cfg),
 		`${cfg.branchPrefix}-${task.id}-${slug}`,
@@ -772,31 +812,47 @@ async function startTask(
 
 	await createBranch(branch, base);
 	await addWorktree(wtDir, branch);
-    void logInfo("startTask.start", { id: task.id, title: task.title, branch, base, wtDir });
+	void logInfo("startTask.start", {
+		id: task.id,
+		title: task.title,
+		branch,
+		base,
+		wtDir,
+	});
 
 	// Run per-project setup script if configured
 	let setupNote: string | null = null;
 	try {
-        const pcfg: ProjectConfig = await loadProjectConfig();
-        if (pcfg.setupScript && pcfg.setupScript.trim().length > 0) {
-            // Execute inside the new worktree directory
-            const cmd = `cd "${wtDir}" && ${pcfg.setupScript}`;
-            void logInfo("startTask.setup.start", { id: task.id, cmd });
-            const proc = await $`bash -lc ${cmd}`.nothrow();
-            if (proc.exitCode !== 0) {
-                const stderr =
-                    (await proc.stderr?.text?.()) || (await proc.stdout?.text?.()) || "";
-                setupNote = `setup failed: ${stderr.trim()}`;
-                void logError("startTask.setup.fail", { id: task.id, exitCode: proc.exitCode, stderr: stderr.trim() });
-            } else {
-                setupNote = "setup OK";
-                void logInfo("startTask.setup.ok", { id: task.id, exitCode: proc.exitCode });
-            }
-        }
-    } catch (e) {
-        setupNote = `setup error: ${String((e as any)?.message ?? e)}`;
-        void logError("startTask.setup.exception", { id: task.id, error: String((e as any)?.message ?? e) });
-    }
+		const pcfg: ProjectConfig = await loadProjectConfig();
+		if (pcfg.setupScript && pcfg.setupScript.trim().length > 0) {
+			// Execute inside the new worktree directory
+			const cmd = `cd "${wtDir}" && ${pcfg.setupScript}`;
+			void logInfo("startTask.setup.start", { id: task.id, cmd });
+			const proc = await $`bash -lc ${cmd}`.nothrow();
+			if (proc.exitCode !== 0) {
+				const stderr =
+					(await proc.stderr?.text?.()) || (await proc.stdout?.text?.()) || "";
+				setupNote = `setup failed: ${stderr.trim()}`;
+				void logError("startTask.setup.fail", {
+					id: task.id,
+					exitCode: proc.exitCode,
+					stderr: stderr.trim(),
+				});
+			} else {
+				setupNote = "setup OK";
+				void logInfo("startTask.setup.ok", {
+					id: task.id,
+					exitCode: proc.exitCode,
+				});
+			}
+		}
+	} catch (e) {
+		setupNote = `setup error: ${String((e as any)?.message ?? e)}`;
+		void logError("startTask.setup.exception", {
+			id: task.id,
+			error: String((e as any)?.message ?? e),
+		});
+	}
 
 	const now = new Date().toISOString();
 	const next: Board = {
@@ -874,12 +930,12 @@ async function deleteTask(
 }
 
 async function completeTask(
-    board: Board,
-    task: Task,
-    setBoard: (b: Board) => void,
-    setInspecting: (s: { active: boolean; task: Task | null }) => void,
-    setCursor: (c: Cursor) => void,
-    setMessage: (m: string) => void,
+	board: Board,
+	task: Task,
+	setBoard: (b: Board) => void,
+	setInspecting: (s: { active: boolean; task: Task | null }) => void,
+	setCursor: (c: Cursor) => void,
+	setMessage: (m: string) => void,
 ) {
 	// Remove worktree if exists per spec
 	if (task.worktreePath) {
@@ -912,77 +968,88 @@ async function completeTask(
 	setCursor({ col, row });
 	const updated = next.tasks.find((t) => t.id === task.id) ?? null;
 	setInspecting({ active: true, task: updated });
-    setMessage(`Marked ${task.id} as Done`);
+	setMessage(`Marked ${task.id} as Done`);
 }
 
 async function mergeAndCompleteTask(
-    board: Board,
-    task: Task,
-    setBoard: (b: Board) => void,
-    setInspecting: (s: { active: boolean; task: Task | null }) => void,
-    setCursor: (c: Cursor) => void,
-    setMessage: (m: string) => void,
+	board: Board,
+	task: Task,
+	setBoard: (b: Board) => void,
+	setInspecting: (s: { active: boolean; task: Task | null }) => void,
+	setCursor: (c: Cursor) => void,
+	setMessage: (m: string) => void,
 ) {
-    if (!task.branch || !task.baseBranch) {
-        setMessage("Missing branch/baseBranch; cannot merge");
-        return;
-    }
+	if (!task.branch || !task.baseBranch) {
+		setMessage("Missing branch/baseBranch; cannot merge");
+		return;
+	}
 
-    try {
-        await mergeBranch(task.baseBranch, task.branch);
-    } catch (e) {
-        setMessage(`Merge failed: ${String((e as any)?.message ?? e)}`);
-        return;
-    }
+	try {
+		await mergeBranch(task.baseBranch, task.branch);
+	} catch (e) {
+		setMessage(`Merge failed: ${String((e as any)?.message ?? e)}`);
+		return;
+	}
 
-    // After successful merge, remove worktree and delete branch
-    if (task.worktreePath) {
-        try {
-            await removeWorktree(task.worktreePath);
-        } catch (e) {
-            // Non-fatal; continue marking as Done
-            setMessage(
-                `Merged, but failed to remove worktree: ${String((e as any)?.message ?? e)}`,
-            );
-        }
-    }
+	// After successful merge, remove worktree and delete branch
+	if (task.worktreePath) {
+		try {
+			await removeWorktree(task.worktreePath);
+		} catch (e) {
+			// Non-fatal; continue marking as Done
+			setMessage(
+				`Merged, but failed to remove worktree: ${String((e as any)?.message ?? e)}`,
+			);
+		}
+	}
 
-    // Ensure we are not on the branch to be deleted
-    try {
-        const cur = await currentBranch();
-        if (cur === task.branch && task.baseBranch) {
-            await $`git checkout ${task.baseBranch}`.nothrow();
-        }
-    } catch {
-        // ignore; deletion might still succeed
-    }
+	// Ensure we are not on the branch to be deleted
+	try {
+		const cur = await currentBranch();
+		if (cur === task.branch && task.baseBranch) {
+			await $`git checkout ${task.baseBranch}`.nothrow();
+		}
+	} catch {
+		// ignore; deletion might still succeed
+	}
 
-    // Try to delete the local branch
-    let branchDeleteNote = "";
-    if (task.branch) {
-        try {
-            await deleteBranch(task.branch);
-        } catch (e) {
-            branchDeleteNote = ` • branch delete failed: ${String((e as any)?.message ?? e)}`;
-        }
-    }
+	// Try to delete the local branch
+	let branchDeleteNote = "";
+	if (task.branch) {
+		try {
+			await deleteBranch(task.branch);
+		} catch (e) {
+			branchDeleteNote = ` • branch delete failed: ${String((e as any)?.message ?? e)}`;
+		}
+	}
 
-    const now = new Date().toISOString();
-    const next: Board = {
-        ...board,
-        tasks: board.tasks.map((t) =>
-            t.id === task.id
-                ? { ...t, status: "Done", worktreePath: undefined, branch: undefined, updatedAt: now }
-                : t,
-        ),
-    };
-    await saveBoard(next);
-    setBoard(next);
-    const col = STATUSES.indexOf("Done");
-    const inCol = next.tasks.filter((t) => t.status === "Done");
-    const row = Math.max(0, inCol.findIndex((t) => t.id === task.id));
-    setCursor({ col, row });
-    const updated = next.tasks.find((t) => t.id === task.id) ?? null;
-    setInspecting({ active: true, task: updated });
-    setMessage(`Merged ${task.branch} into ${task.baseBranch}, removed worktree and deleted branch${branchDeleteNote}`);
+	const now = new Date().toISOString();
+	const next: Board = {
+		...board,
+		tasks: board.tasks.map((t) =>
+			t.id === task.id
+				? {
+						...t,
+						status: "Done",
+						worktreePath: undefined,
+						branch: undefined,
+						updatedAt: now,
+					}
+				: t,
+		),
+	};
+	await saveBoard(next);
+	setBoard(next);
+	const col = STATUSES.indexOf("Done");
+	const inCol = next.tasks.filter((t) => t.status === "Done");
+	const row = Math.max(
+		0,
+		inCol.findIndex((t) => t.id === task.id),
+	);
+	setCursor({ col, row });
+	const updated = next.tasks.find((t) => t.id === task.id) ?? null;
+	setInspecting({ active: true, task: updated });
+	setMessage(
+		`Merged ${task.branch} into ${task.baseBranch}, removed worktree and deleted branch${branchDeleteNote}`,
+	);
 }
