@@ -89,6 +89,10 @@ export function App() {
 		active: boolean;
 		task: Task | null;
 	}>({ active: false, task: null });
+	const [cancelling, setCancelling] = useState<{
+		active: boolean;
+		task: Task | null;
+	}>({ active: false, task: null });
 	const [merging, setMerging] = useState<{
 		active: boolean;
 		task: Task | null;
@@ -170,6 +174,29 @@ export function App() {
 							setCursor,
 							// Use task status column to keep UX consistent across views
 							STATUSES.indexOf(t.status),
+							setMessage,
+						);
+					return;
+				}
+				return; // ignore other keys while confirming
+			}
+
+			// Cancelling confirm mode
+			if (cancelling.active) {
+				if (key.escape || input === "n" || input === "N") {
+					setCancelling({ active: false, task: null });
+					return;
+				}
+				if (input === "y" || input === "Y") {
+					const t = cancelling.task;
+					setCancelling({ active: false, task: null });
+					if (t && board)
+						void cancelTask(
+							board,
+							t,
+							setBoard,
+							setInspecting,
+							setCursor,
 							setMessage,
 						);
 					return;
@@ -265,6 +292,16 @@ export function App() {
 				}
 				setMerging({ active: true, task: t });
 				setMessage(`Merge ${t.branch} -> ${t.baseBranch} and delete worktree/branch? (y/N)`);
+				return;
+			}
+
+			if (input === "x") {
+				if (!inspecting.task) return;
+				const t = inspecting.task;
+				setCancelling({ active: true, task: t });
+				setMessage(
+					`Cancel task "${t.title}" and remove worktree/delete branch? (y/N)`,
+				);
 				return;
 			}
 			if (input === "e") {
@@ -398,7 +435,19 @@ export function App() {
 			).catch((e) => setMessage(String(e?.message ?? e)));
 			return;
 		}
-		if (input === "x") toast("Cancel: not implemented yet");
+		if (input === "x") {
+			if (!board || !grouped) return;
+			const list = grouped[STATUSES[cursor.col]];
+			if (list.length === 0) return;
+			const row = Math.min(cursor.row, list.length - 1);
+			const target =
+				inspecting.active && inspecting.task ? inspecting.task : list[row];
+			setCancelling({ active: true, task: target });
+			setMessage(
+				`Cancel task "${target.title}" and remove worktree/delete branch? (y/N)`,
+			);
+			return;
+		}
 	});
 
 	if (!board || !grouped || !config)
@@ -436,6 +485,10 @@ export function App() {
 				) : deleting.active && deleting.task ? (
 					<Text>
 						Delete task <Text color="red">"{deleting.task.title}"</Text>? (y/N)
+					</Text>
+				) : cancelling.active && cancelling.task ? (
+					<Text>
+						Cancel task <Text color="yellow">"{cancelling.task.title}"</Text> and remove worktree? (y/N)
 					</Text>
 				) : showHelp ? (
 					<Help />
@@ -913,6 +966,61 @@ async function completeTask(
 	const updated = next.tasks.find((t) => t.id === task.id) ?? null;
 	setInspecting({ active: true, task: updated });
     setMessage(`Marked ${task.id} as Done`);
+}
+
+async function cancelTask(
+    board: Board,
+    task: Task,
+    setBoard: (b: Board) => void,
+    setInspecting: (s: { active: boolean; task: Task | null }) => void,
+    setCursor: (c: Cursor) => void,
+    setMessage: (m: string) => void,
+): Promise<void> {
+    // Remove worktree if exists per spec
+    if (task.worktreePath) {
+        try {
+            await removeWorktree(task.worktreePath);
+        } catch (e) {
+            setMessage(`Failed to remove worktree: ${String((e as any)?.message ?? e)}`);
+        }
+    }
+
+    // Try to delete the local branch if present
+    let branchDeleteNote = "";
+    if (task.branch) {
+        try {
+            const cur = await currentBranch();
+            if (cur === task.branch) {
+                if (task.baseBranch) {
+                    await $`git checkout ${task.baseBranch}`.nothrow();
+                } else {
+                    await $`git checkout --detach`.nothrow();
+                }
+            }
+            await deleteBranch(task.branch);
+        } catch (e) {
+            branchDeleteNote = ` • branch delete failed: ${String((e as any)?.message ?? e)}`;
+        }
+    }
+
+    const now = new Date().toISOString();
+    const next: Board = {
+        ...board,
+        tasks: board.tasks.map((t) =>
+            t.id === task.id
+                ? { ...t, status: "Cancelled", worktreePath: undefined, branch: undefined, updatedAt: now }
+                : t,
+        ),
+    };
+    await saveBoard(next);
+    setBoard(next);
+    const col = STATUSES.indexOf("Cancelled");
+    const inCol = next.tasks.filter((t) => t.status === "Cancelled");
+    const row = Math.max(0, inCol.findIndex((t) => t.id === task.id));
+    setCursor({ col, row });
+    const updated = next.tasks.find((t) => t.id === task.id) ?? null;
+    setInspecting({ active: true, task: updated });
+    setMessage(`Marked ${task.id} as Cancelled, removed worktree and deleted branch${branchDeleteNote}`);
 }
 
 async function mergeAndCompleteTask(
