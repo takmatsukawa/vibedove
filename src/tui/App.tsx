@@ -704,6 +704,8 @@ async function startTask(
 		`${cfg.branchPrefix}-${task.id}-${slug}`,
 	);
 
+	// debug removed
+
 	await createBranch(branch, base);
 	await addWorktree(wtDir, branch);
 

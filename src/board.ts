@@ -10,19 +10,17 @@ async function ensureDir(p: string) {
 }
 
 export async function loadBoard(cwd = process.cwd()): Promise<Board> {
-	const repoId = await repoIdentity(cwd);
-	const sharedPath = sharedBoardPath(repoId);
-
-	// Use shared board at ~/.vibedove/projects/<project>/board.json
+	const resolvedId = await repoIdentity(cwd);
+	const file = sharedBoardPath(resolvedId);
 	try {
-		const data = await fs.readFile(sharedPath, "utf8");
+		const data = await fs.readFile(file, "utf8");
 		return JSON.parse(data) as Board;
-	} catch {}
-
-	// Initialize empty board at shared location
-	const board: Board = { version: 1, tasks: [] };
-	await saveBoard(board, cwd);
-	return board;
+	} catch {
+		// Initialize empty board at shared location
+		const board: Board = { version: 1, tasks: [] };
+		await saveBoard(board, cwd);
+		return board;
+	}
 }
 
 export async function saveBoard(
@@ -50,13 +48,34 @@ export function tasksByStatus(board: Board): Record<Status, Task[]> {
 
 // Helpers to share board.json across git worktrees of the same repo
 async function repoIdentity(cwd: string): Promise<string> {
-	// Prefer a stable identifier shared across worktrees
+	// Prefer a stable, absolute identifier shared across worktrees
 	const common = await $`git -C ${cwd} rev-parse --git-common-dir`.nothrow();
-	if (common.exitCode === 0) return (await common.text()).trim();
+	if (common.exitCode === 0) {
+		const raw = (await common.text()).trim();
+		const pathMod = require("path");
+		if (pathMod.isAbsolute(raw)) {
+			const normalized =
+				raw.endsWith(`${pathMod.sep}.git`) || raw.endsWith(`.git`)
+					? pathMod.dirname(raw)
+					: raw;
+			return normalized;
+		}
+		const top = await $`git -C ${cwd} rev-parse --show-toplevel`.nothrow();
+		const base = top.exitCode === 0 ? (await top.text()).trim() : cwd;
+		const resolved = pathMod.join(base, raw);
+		const normalized =
+			resolved.endsWith(`${pathMod.sep}.git`) || resolved.endsWith(`.git`)
+				? pathMod.dirname(resolved)
+				: resolved;
+		return normalized;
+	}
 
 	// Fallback to repo toplevel (non-worktree or non-git directories)
 	const top = await $`git -C ${cwd} rev-parse --show-toplevel`.nothrow();
-	if (top.exitCode === 0) return (await top.text()).trim();
+	if (top.exitCode === 0) {
+		const t = (await top.text()).trim();
+		return t;
+	}
 	return cwd;
 }
 

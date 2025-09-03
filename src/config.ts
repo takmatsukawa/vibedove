@@ -66,15 +66,12 @@ export function resolveTmpRoot(cfg: Config): string {
 export async function loadProjectConfig(
 	cwd = process.cwd(),
 ): Promise<ProjectConfig> {
-	const id = await repoIdentity(cwd);
-	const file = path.join(projectStorageDir(id), "config.json");
+	const resolvedId = await repoIdentity(cwd);
+	const file = path.join(projectStorageDir(resolvedId), "config.json");
 	try {
 		const data = await fs.readFile(file, "utf8");
 		const parsed = JSON.parse(data);
-		return {
-			...DEFAULT_PROJECT_CONFIG,
-			...parsed,
-		} satisfies ProjectConfig;
+		return { ...DEFAULT_PROJECT_CONFIG, ...parsed } satisfies ProjectConfig;
 	} catch {
 		return DEFAULT_PROJECT_CONFIG;
 	}
@@ -92,9 +89,30 @@ function projectStorageDir(repoRoot: string): string {
 async function repoIdentity(cwd: string): Promise<string> {
 	// Use a worktree-stable identifier for per-project storage
 	const common = await $`git -C ${cwd} rev-parse --git-common-dir`.nothrow();
-	if (common.exitCode === 0) return (await common.text()).trim();
+	if (common.exitCode === 0) {
+		const raw = (await common.text()).trim();
+		// Resolve relative paths (e.g., ".git") against repo toplevel
+		if (path.isAbsolute(raw)) {
+			const normalized =
+				raw.endsWith(`${path.sep}.git`) || raw.endsWith(`.git`)
+					? path.dirname(raw)
+					: raw;
+			return normalized;
+		}
+		const top = await $`git -C ${cwd} rev-parse --show-toplevel`.nothrow();
+		const base = top.exitCode === 0 ? (await top.text()).trim() : cwd;
+		const resolved = path.join(base, raw);
+		const normalized =
+			resolved.endsWith(`${path.sep}.git`) || resolved.endsWith(`.git`)
+				? path.dirname(resolved)
+				: resolved;
+		return normalized;
+	}
 	const top = await $`git -C ${cwd} rev-parse --show-toplevel`.nothrow();
-	if (top.exitCode === 0) return (await top.text()).trim();
+	if (top.exitCode === 0) {
+		const t = (await top.text()).trim();
+		return t;
+	}
 	return cwd;
 }
 
