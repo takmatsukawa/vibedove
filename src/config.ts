@@ -88,7 +88,9 @@ export function projectStorageDir(repoRoot: string): string {
 
 export async function repoIdentity(cwd: string): Promise<string> {
 	// Use a worktree-stable identifier for per-project storage
-	const common = await $`git -C ${cwd} rev-parse --git-common-dir`.quiet().nothrow();
+	const common = await $`git -C ${cwd} rev-parse --git-common-dir`
+		.quiet()
+		.nothrow();
 	if (common.exitCode === 0) {
 		const raw = (await common.text()).trim();
 		// Resolve relative paths (e.g., ".git") against repo toplevel
@@ -99,7 +101,9 @@ export async function repoIdentity(cwd: string): Promise<string> {
 					: raw;
 			return normalized;
 		}
-		const top = await $`git -C ${cwd} rev-parse --show-toplevel`.quiet().nothrow();
+		const top = await $`git -C ${cwd} rev-parse --show-toplevel`
+			.quiet()
+			.nothrow();
 		const base = top.exitCode === 0 ? (await top.text()).trim() : cwd;
 		const resolved = path.join(base, raw);
 		const normalized =
@@ -108,7 +112,9 @@ export async function repoIdentity(cwd: string): Promise<string> {
 				: resolved;
 		return normalized;
 	}
-	const top = await $`git -C ${cwd} rev-parse --show-toplevel`.quiet().nothrow();
+	const top = await $`git -C ${cwd} rev-parse --show-toplevel`
+		.quiet()
+		.nothrow();
 	if (top.exitCode === 0) {
 		const t = (await top.text()).trim();
 		return t;
