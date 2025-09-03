@@ -153,28 +153,29 @@ export function App() {
 			return; // don't process other keys while creating
 		}
 
-		// Deleting confirm mode
-		if (deleting.active) {
-			if (key.escape || input === "n" || input === "N") {
-				setDeleting({ active: false, task: null });
-				return;
+			// Deleting confirm mode
+			if (deleting.active) {
+				if (key.escape || input === "n" || input === "N") {
+					setDeleting({ active: false, task: null });
+					return;
+				}
+				if (input === "y" || input === "Y") {
+					const t = deleting.task;
+					setDeleting({ active: false, task: null });
+					if (t && board)
+						void deleteTask(
+							board,
+							t,
+							setBoard,
+							setCursor,
+							// Use task status column to keep UX consistent across views
+							STATUSES.indexOf(t.status),
+							setMessage,
+						);
+					return;
+				}
+				return; // ignore other keys while confirming
 			}
-			if (input === "y" || input === "Y") {
-				const t = deleting.task;
-				setDeleting({ active: false, task: null });
-				if (t && board)
-					void deleteTask(
-						board,
-						t,
-						setBoard,
-						setCursor,
-						cursor.col,
-						setMessage,
-					);
-				return;
-			}
-			return; // ignore other keys while confirming
-		}
 
 		// Merging confirm mode
 		if (merging.active) {
@@ -218,6 +219,11 @@ export function App() {
 			}
 
 			// Not editing: handle inspect controls
+			if (key.delete || key.backspace) {
+				if (!inspecting.task) return;
+				setDeleting({ active: true, task: inspecting.task });
+				return;
+			}
 			if (input === "s") {
 				if (!board || !inspecting.task || !config) return;
 				void startTask(
