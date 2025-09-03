@@ -89,7 +89,7 @@
 - 戻し: In Progress → To Do に戻す場合、既存 worktree は残す。
 
 ## PR フロー
-- 前提: GitHub CLI `gh` がインストール済み、リモート名は `origin`。
+- 前提: GitHub CLI `gh` がインストール済み。
 - 実装: In Progress 中に「PR作成」操作で `gh pr create` を実行。成功時:
   - タスクを自動で In Review に遷移。
   - 生成された PR URL を表示・コピー可能にする（TUI上で表示）。
