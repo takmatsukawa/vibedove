@@ -58,12 +58,45 @@ export async function removeWorktree(
 }
 
 export async function deleteBranch(
-	name: string,
-	cwd = process.cwd(),
+    name: string,
+    cwd = process.cwd(),
 ): Promise<void> {
-	const p = await $`git -C ${cwd} branch -D ${name}`.nothrow();
-	if (p.exitCode !== 0) {
-		const stderr = await p.stderr?.text?.();
-		throw new Error(`git branch -D failed: ${stderr ?? ""}`);
-	}
+    const p = await $`git -C ${cwd} branch -D ${name}`.nothrow();
+    if (p.exitCode !== 0) {
+        const stderr = await p.stderr?.text?.();
+        throw new Error(`git branch -D failed: ${stderr ?? ""}`);
+    }
+}
+
+export async function mergeBranch(
+    base: string,
+    head: string,
+    cwd = process.cwd(),
+): Promise<void> {
+    const orig = await currentBranch(cwd);
+    // Checkout base branch if not already on it
+    if (orig !== base) {
+        const co = await $`git -C ${cwd} checkout ${base}`.nothrow();
+        if (co.exitCode !== 0) {
+            const stderr = await co.stderr?.text?.();
+            throw new Error(`git checkout ${base} failed: ${stderr ?? ""}`);
+        }
+    }
+
+    // Try a non-ff merge with an auto message
+    const m = await $`git -C ${cwd} merge --no-ff --no-edit ${head}`.nothrow();
+    if (m.exitCode !== 0) {
+        const stderr = await m.stderr?.text?.();
+        // Attempt to abort merge to leave repo clean
+        await $`git -C ${cwd} merge --abort`.nothrow();
+        // Switch back if we changed branches
+        if (orig !== base) await $`git -C ${cwd} checkout ${orig}`.nothrow();
+        throw new Error(`git merge failed: ${stderr ?? ""}`);
+    }
+
+    // Switch back to original branch if needed
+    if (orig !== base) {
+        await $`git -C ${cwd} checkout ${orig}`.nothrow();
+    }
+    void logInfo("git.merge", { base, head, cwd });
 }
