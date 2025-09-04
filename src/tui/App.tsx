@@ -83,10 +83,17 @@ export function App() {
 	const [cursor, setCursor] = useState<Cursor>({ col: 0, row: 0 });
 	const [showHelp, setShowHelp] = useState(false);
 	const [config, setConfig] = useState<Config | null>(null);
-	const [creating, setCreating] = useState<{ active: boolean; buf: string }>({
-		active: false,
-		buf: "",
-	});
+    const [creating, setCreating] = useState<{
+        active: boolean;
+        focus: "title" | "desc";
+        title: string;
+        desc: string;
+    }>({
+        active: false,
+        focus: "title",
+        title: "",
+        desc: "",
+    });
 	const [deleting, setDeleting] = useState<{
 		active: boolean;
 		task: Task | null;
@@ -136,28 +143,23 @@ export function App() {
 		if (input === "q") process.exit(0);
 		if (input === "?") setShowHelp((v) => !v);
 
-		// Creating mode (simple inline input without extra deps)
-		if (creating.active) {
-			if (key.return) {
-				const title = creating.buf.trim();
-				setCreating({ active: false, buf: "" });
-				if (title.length > 0 && board)
-					void addTask(board, title, setBoard, setCursor);
-				return;
-			}
-			if (key.escape) {
-				setCreating({ active: false, buf: "" });
-				return;
-			}
-			if (key.backspace || key.delete) {
-				setCreating((s) => ({ active: true, buf: s.buf.slice(0, -1) }));
-				return;
-			}
-			if (input) {
-				setCreating((s) => ({ active: true, buf: s.buf + input }));
-			}
-			return; // don't process other keys while creating
-		}
+        // Creating mode (handled by TextInput components)
+        if (creating.active) {
+            if (key.escape) {
+                setCreating({ active: false, focus: "title", title: "", desc: "" });
+                return;
+            }
+            // Navigate between Title <-> Description with Tab / Shift+Tab
+            if (key.tab && key.shift) {
+                setCreating((s) => ({ ...s, focus: "title" }));
+                return;
+            }
+            if (key.tab && !key.shift) {
+                setCreating((s) => ({ ...s, focus: "desc" }));
+                return;
+            }
+            return; // let TextInput handle typing & Enter
+        }
 
 		// Deleting confirm mode
 		if (deleting.active) {
@@ -480,8 +482,9 @@ export function App() {
 			return;
 		}
 		// 'R' always refreshes
-		if (input === "R") reload(setBoard, setConfig);
-		if (input === "n") setCreating({ active: true, buf: "" });
+        if (input === "R") reload(setBoard, setConfig);
+        if (input === "n")
+            setCreating({ active: true, focus: "title", title: "", desc: "" });
 		if (input === "o") {
 			if (!config) return;
 			const list = grouped ? grouped[STATUSES[cursor.col]] : [];
@@ -594,11 +597,47 @@ export function App() {
 					{config.defaultBaseBranch ?? "current"} • editor=
 					{config.editor ?? "-"}
 				</Text>
-				{creating.active ? (
-					<Text>
-						New task title: <Text color="green">{creating.buf || " "}</Text>
-					</Text>
-				) : deleting.active && deleting.task ? (
+                {creating.active ? (
+                    <Box flexDirection="column">
+                        <Box>
+                            <Text>New task title: </Text>
+                            <TextInput
+                                value={creating.title}
+                                focus={creating.focus === "title"}
+                                onChange={(v) => setCreating((s) => ({ ...s, title: v }))}
+                                onSubmit={(v) => {
+                                    const t = v.trim();
+                                    if (!t.length) return; // keep focus until user types
+                                    setCreating((s) => ({ ...s, focus: "desc" }));
+                                }}
+                            />
+                            <Text dimColor>  Enter to continue • Esc to cancel • Tab to switch</Text>
+                        </Box>
+                        <Box>
+                            <Text>Description (optional): </Text>
+                            <TextInput
+                                value={creating.desc}
+                                focus={creating.focus === "desc"}
+                                onChange={(v) => setCreating((s) => ({ ...s, desc: v }))}
+                                onSubmit={async (v) => {
+                                    const desc = v.trim();
+                                    const title = creating.title.trim();
+                                    if (!title.length) {
+                                        setCreating((s) => ({ ...s, focus: "title" }));
+                                        setMessage("Title is required");
+                                        return;
+                                    }
+                                    if (board && title.length) {
+                                        await addTask(board, title, desc || undefined, setBoard, setCursor);
+                                    }
+                                    setCreating({ active: false, focus: "title", title: "", desc: "" });
+                                    setMessage("");
+                                }}
+                            />
+                        </Box>
+                        <Text dimColor>Enter on Description to submit • Esc to cancel • Tab/Shift+Tab to switch • Leave description empty to skip</Text>
+                    </Box>
+                ) : deleting.active && deleting.task ? (
 					<Text>
 						Delete task <Text color="red">"{deleting.task.title}"</Text>? (y/N)
 					</Text>
@@ -778,20 +817,22 @@ async function openEditor(
 }
 
 async function addTask(
-	board: Board,
-	title: string,
-	setBoard: (b: Board) => void,
-	setCursor: (c: Cursor) => void,
+    board: Board,
+    title: string,
+    description: string | undefined,
+    setBoard: (b: Board) => void,
+    setCursor: (c: Cursor) => void,
 ) {
 	const id = shortId(7);
 	const now = new Date().toISOString();
-	const task: Task = {
-		id,
-		title,
-		status: "To Do",
-		createdAt: now,
-		updatedAt: now,
-	};
+    const task: Task = {
+        id,
+        title,
+        description: description && description.length ? description : undefined,
+        status: "To Do",
+        createdAt: now,
+        updatedAt: now,
+    };
 	const next: Board = { ...board, tasks: [...board.tasks, task] };
 	await saveBoard(next);
 	setBoard(next);
