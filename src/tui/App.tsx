@@ -72,8 +72,7 @@ function Help() {
 		<>
 			<Text>
 				Keys: h/l(←/→) move columns • j/k(↑/↓) select • n new • s start • p PR •
-				m merge+done (detail/In Progress) • d done • x cancel • r refresh • ?
-				help • q quit
+				m merge+done (detail/In Progress) • d done • x cancel • r review (In Progress→In Review) • R refresh • ? help • q quit
 			</Text>
 		</>
 	);
@@ -385,6 +384,24 @@ export function App() {
 				return;
 			}
 
+			// Move In Progress -> In Review when pressing 'r' in detail view; otherwise reload
+			if (input === "r") {
+				if (!board || !inspecting.task) return;
+				if (inspecting.task.status === "In Progress") {
+					void changeTaskStatus(
+						board,
+						inspecting.task.id,
+						"In Review",
+						setBoard,
+						setCursor,
+						setInspecting,
+					);
+				} else {
+					void reload(setBoard, setConfig);
+				}
+				return;
+			}
+
 			if (key.escape) {
 				if (editChooser) {
 					setEditChooser(false);
@@ -434,7 +451,36 @@ export function App() {
 			}
 			return;
 		}
-		if (input === "r") reload(setBoard, setConfig);
+		// 'r' moves In Progress -> In Review when a task is selected; otherwise refresh
+		if (input === "r") {
+			if (!board || !grouped) {
+				reload(setBoard, setConfig);
+				return;
+			}
+			const list = grouped[STATUSES[cursor.col]];
+			if (list.length === 0) {
+				reload(setBoard, setConfig);
+				return;
+			}
+			const row = Math.min(cursor.row, list.length - 1);
+			const target =
+				inspecting.active && inspecting.task ? inspecting.task : list[row];
+			if (target.status === "In Progress") {
+				void changeTaskStatus(
+					board,
+					target.id,
+					"In Review",
+					setBoard,
+					setCursor,
+					setInspecting,
+				);
+			} else {
+				reload(setBoard, setConfig);
+			}
+			return;
+		}
+		// 'R' always refreshes
+		if (input === "R") reload(setBoard, setConfig);
 		if (input === "n") setCreating({ active: true, buf: "" });
 		if (input === "o") {
 			if (!config) return;
