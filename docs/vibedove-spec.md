@@ -43,6 +43,19 @@
     - 例: "bun install" / "npm install" / "pnpm i && bun run build"
     - 実行ディレクトリ: 生成した worktree のルート（`cd <worktree> && <script>` 相当）
     - 空/未設定なら何もしない。
+  - `copyFiles` (string[] | string): worktree 作成時に元リポジトリからコピーするファイル/ディレクトリの相対パス一覧。
+    - 文字列の場合は、空白/改行区切りで複数指定可能（例: ".env .env.local config/secrets"）。
+    - 配列の場合は各要素を相対パスとして解釈。
+    - 絶対パスは無視（安全のためスキップ）。
+    - コピーは `setupScript` 実行前に行う（.env 等に依存するセットアップを想定）。
+
+例:
+```jsonc
+{
+  "setupScript": "bun install",
+  "copyFiles": ".env .env.local scripts/hooks"
+}
+```
 
 ## データ保存
 - ボード: `~/.vibedove/projects/<repo-path-sanitized>/board.json`
