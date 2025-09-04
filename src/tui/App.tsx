@@ -1,4 +1,5 @@
 import { $ } from "bun";
+import { promises as fs } from "fs";
 import { Box, Text, useInput } from "ink";
 import SelectInput from "ink-select-input";
 import TextInput from "ink-text-input";
@@ -930,10 +931,36 @@ async function startTask(
 		wtDir,
 	});
 
-	// Run per-project setup script if configured
+	// Copy configured files/dirs, then run per-project setup script if configured
 	let setupNote: string | null = null;
+	let copyNote: string | null = null;
 	try {
 		const pcfg: ProjectConfig = await loadProjectConfig();
+		// Copy files first so setup can rely on them (e.g., .env)
+		if (pcfg.copyFiles && pcfg.copyFiles.length > 0) {
+			const repoRoot = process.cwd();
+			const errors: string[] = [];
+			for (const rel of pcfg.copyFiles) {
+				const trimmed = rel.trim();
+				if (!trimmed) continue;
+				if (path.isAbsolute(trimmed)) {
+					errors.push(`skip absolute: ${trimmed}`);
+					continue;
+				}
+				const src = path.resolve(repoRoot, trimmed);
+				const dest = path.resolve(wtDir, trimmed);
+				try {
+					await copyRecursive(src, dest);
+					void logInfo("startTask.copy.ok", { id: task.id, src, dest });
+				} catch (e) {
+					const msg = String((e as any)?.message ?? e);
+					errors.push(`${trimmed}: ${msg}`);
+					void logError("startTask.copy.fail", { id: task.id, src, dest, error: msg });
+				}
+			}
+			if (errors.length) copyNote = `copy issues: ${errors.join("; ")}`;
+		}
+
 		if (pcfg.setupScript && pcfg.setupScript.trim().length > 0) {
 			// Execute inside the new worktree directory
 			const cmd = `cd "${wtDir}" && ${pcfg.setupScript}`;
@@ -992,8 +1019,33 @@ async function startTask(
 		inProg.findIndex((t) => t.id === task.id),
 	);
 	setCursor({ col, row });
-	const note = setupNote ? ` • ${setupNote}` : "";
+	const notes: string[] = [];
+	if (copyNote) notes.push(copyNote);
+	if (setupNote) notes.push(setupNote);
+	const note = notes.length ? ` • ${notes.join(" • ")}` : "";
 	setMessage(`Started ${task.id} on ${branch}${note}`);
+}
+
+async function copyRecursive(src: string, dest: string): Promise<void> {
+	const st = await fs.stat(src).catch(() => null);
+	if (!st) throw new Error("not found");
+	if (st.isDirectory()) {
+		await fs.mkdir(dest, { recursive: true });
+		const entries = await fs.readdir(src, { withFileTypes: true });
+		for (const ent of entries) {
+			const s = path.join(src, ent.name);
+			const d = path.join(dest, ent.name);
+			if (ent.isDirectory()) await copyRecursive(s, d);
+			else if (ent.isFile()) await copyFileEnsuringDir(s, d);
+		}
+	} else if (st.isFile()) {
+		await copyFileEnsuringDir(src, dest);
+	}
+}
+
+async function copyFileEnsuringDir(src: string, dest: string): Promise<void> {
+	await fs.mkdir(path.dirname(dest), { recursive: true });
+	await fs.copyFile(src, dest);
 }
 
 async function deleteTask(

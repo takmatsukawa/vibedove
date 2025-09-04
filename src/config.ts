@@ -14,6 +14,8 @@ export type Config = {
 export type ProjectConfig = {
 	// Command to run after creating a worktree for a task
 	setupScript: string | null; // e.g., "bun install" or "npm install"
+	// List of files/dirs to copy into new worktrees (relative to repo root)
+	copyFiles: string[];
 };
 
 export const DEFAULTS: Config = {
@@ -26,6 +28,7 @@ export const DEFAULTS: Config = {
 
 export const DEFAULT_PROJECT_CONFIG: ProjectConfig = {
 	setupScript: null,
+	copyFiles: [],
 };
 
 const GLOBAL_PATH = path.join(os.homedir(), ".vibedove", "config.json");
@@ -71,7 +74,21 @@ export async function loadProjectConfig(
 	try {
 		const data = await fs.readFile(file, "utf8");
 		const parsed = JSON.parse(data);
-		return { ...DEFAULT_PROJECT_CONFIG, ...parsed } satisfies ProjectConfig;
+		const merged: any = { ...DEFAULT_PROJECT_CONFIG, ...parsed };
+		// normalize copyFiles to a string[]; support string (whitespace/newline separated) or array
+		if (Array.isArray(merged.copyFiles)) {
+			merged.copyFiles = merged.copyFiles
+				.map((v: unknown) => String(v).trim())
+				.filter((v: string) => v.length > 0);
+		} else if (typeof merged.copyFiles === "string") {
+			merged.copyFiles = merged.copyFiles
+				.split(/[\s\n\r\t]+/g)
+				.map((v: string) => v.trim())
+				.filter((v: string) => v.length > 0);
+		} else {
+			merged.copyFiles = [];
+		}
+		return merged satisfies ProjectConfig;
 	} catch {
 		return DEFAULT_PROJECT_CONFIG;
 	}
