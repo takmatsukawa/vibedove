@@ -318,6 +318,19 @@ export function App() {
 				setDeleting({ active: true, task: inspecting.task });
 				return;
 			}
+			// Mark as Done from detail view
+			if (input === "d") {
+				if (!board || !inspecting.task) return;
+				void completeTask(
+					board,
+					inspecting.task,
+					setBoard,
+					setInspecting,
+					setCursor,
+					setMessage,
+				);
+				return;
+			}
 			if (input === "s") {
 				if (!board || !inspecting.task || !config) return;
 				void startTask(
