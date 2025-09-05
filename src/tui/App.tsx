@@ -7,11 +7,15 @@ import path from "path";
 import React, { useEffect, useMemo, useState } from "react";
 import { loadBoard, saveBoard } from "../board";
 import {
-	type Config,
-	loadConfig,
-	loadProjectConfig,
-	type ProjectConfig,
-	resolveTmpRoot,
+    type Config,
+    loadConfig,
+    loadProjectConfig,
+    type ProjectConfig,
+    resolveTmpRoot,
+    ensureProjectConfigFile,
+    ensureGlobalConfigFile,
+    loadProjectConfigStrict,
+    loadConfigStrict,
 } from "../config";
 import { STATUSES } from "../constants";
 import {
@@ -73,7 +77,7 @@ function Help() {
         <>
             <Text>
                 Keys: h/l(←/→) move columns • j/k(↑/↓) select • n new • s start •
-                m merge+done (detail/In Progress) • d done • x cancel • r review (In Progress→In Review) • R refresh • ? help • q quit
+                t ToDo (In Progress→To Do) • m merge+done (detail/In Progress) • d done • x cancel • r review (In Progress→In Review) • R refresh • c project-config • C global-config • ? help • q quit
             </Text>
         </>
     );
@@ -346,7 +350,7 @@ export function App() {
 				).catch((e) => setMessage(String((e as any)?.message ?? e)));
 				return;
 			}
-			if (input === "c") {
+			if (input === "t") {
 				if (!board || !inspecting.task) return;
 				if (inspecting.task.status === "In Progress") {
 					void changeTaskStatus(
@@ -448,8 +452,8 @@ export function App() {
 			setCursor((c) => ({ ...c, row: c.row + 1 }));
 
 		// Actions
-		if (input === "c") {
-			// Also allow moving In Progress -> To Do from list view
+		if (input === "t") {
+			// Move In Progress -> To Do from list view
 			if (!board || !grouped) return;
 			const list = grouped[STATUSES[cursor.col]];
 			if (list.length === 0) return;
@@ -465,6 +469,45 @@ export function App() {
 					setInspecting,
 				);
 			}
+			return;
+		}
+
+		// Open project config in EDITOR (create if missing)
+		if (input === "c") {
+			(async () => {
+				try {
+					const file = await ensureProjectConfigFile();
+					await openEditor(file, config!, setMessage);
+					try {
+						await loadProjectConfigStrict();
+						setMessage(`Project config reloaded: ${file}`);
+					} catch (e) {
+						setMessage(`Project config parse error: ${String((e as any)?.message ?? e)}`);
+					}
+				} catch (e) {
+					setMessage(`Open project config failed: ${String((e as any)?.message ?? e)}`);
+				}
+			})();
+			return;
+		}
+
+		// Open global config in EDITOR (create if missing) and reload
+		if (input === "C") {
+			(async () => {
+				try {
+					const file = await ensureGlobalConfigFile();
+					await openEditor(file, config!, setMessage);
+					try {
+						const cfg = await loadConfigStrict();
+						setConfig(cfg);
+						setMessage(`Global config reloaded: ${file}`);
+					} catch (e) {
+						setMessage(`Global config parse error: ${String((e as any)?.message ?? e)}`);
+					}
+				} catch (e) {
+					setMessage(`Open global config failed: ${String((e as any)?.message ?? e)}`);
+				}
+			})();
 			return;
 		}
 		// 'r' moves In Progress -> In Review when a task is selected; otherwise refresh
