@@ -69,14 +69,14 @@ function Column({
 }
 
 function Help() {
-	return (
-		<>
-			<Text>
-				Keys: h/l(←/→) move columns • j/k(↑/↓) select • n new • s start • p PR •
-				m merge+done (detail/In Progress) • d done • x cancel • r review (In Progress→In Review) • R refresh • ? help • q quit
-			</Text>
-		</>
-	);
+    return (
+        <>
+            <Text>
+                Keys: h/l(←/→) move columns • j/k(↑/↓) select • n new • s start •
+                m merge+done (detail/In Progress) • d done • x cancel • r review (In Progress→In Review) • R refresh • ? help • q quit
+            </Text>
+        </>
+    );
 }
 
 export function App() {
@@ -549,12 +549,12 @@ export function App() {
 			).catch((e) => setMessage(String(e?.message ?? e)));
 			return;
 		}
-		if (input === "p") toast("PR create: not implemented yet");
-		if (input === "d") {
-			if (!board || !grouped) return;
-			const list = grouped[STATUSES[cursor.col]];
-			if (list.length === 0) return;
-			const row = Math.min(cursor.row, list.length - 1);
+        // 'p' key removed (PR creation not implemented)
+        if (input === "d") {
+            if (!board || !grouped) return;
+            const list = grouped[STATUSES[cursor.col]];
+            if (list.length === 0) return;
+            const row = Math.min(cursor.row, list.length - 1);
 			const target =
 				inspecting.active && inspecting.task ? inspecting.task : list[row];
 			void completeTask(
@@ -798,9 +798,7 @@ function group(board: Board): Record<Status, Task[]> {
 	return out;
 }
 
-function toast(_msg: string) {
-	// For MVP skeleton we just noop; Ink doesn't have global toasts by default
-}
+// Removed toast usage with 'p' keybinding deletion
 
 async function reload(
 	setBoard: (b: Board) => void,

@@ -7,7 +7,7 @@
   - 1タスク=1 worktree（着手時に作成）
   - ブランチ命名、作成/削除の自動化
   - TUI（Ink）でのボード操作
-  - PR 作成（gh CLI 前提）と状態遷移の連携
+  - （変更）PR 作成は現状未実装。将来の拡張で対応予定。
 - 非スコープ(MVP): プロジェクトローカル上書き設定、API連携、複雑なメタデータ管理、PR 自動マージ、リモートブランチ削除。
 
 ## 用語
@@ -101,12 +101,9 @@
 - 完了/中止時: Done / Cancelled へ移行したら worktree を削除（ローカル/リモートブランチは削除しない）。
 - 戻し: In Progress → To Do に戻す場合、既存 worktree は残す。
 
-## PR フロー
-- 前提: GitHub CLI `gh` がインストール済み。
-- 実装: In Progress 中に「PR作成」操作で `gh pr create` を実行。成功時:
-  - タスクを自動で In Review に遷移。
-  - 生成された PR URL を表示・コピー可能にする（TUI上で表示）。
-- In Review への手動移動時は副作用なし（状態のみ変更）。
+## PR フロー（未実装）
+- 現状、TUI からの PR 作成は未実装です。
+- 将来的に GitHub CLI `gh` を用いた `gh pr create` の統合を検討します（作成後に In Review へ遷移、PR URL を表示など）。
 
 ## TUI（Ink）
 - 目的: キーボード中心で Kanban を操作し、タスクと Git 操作を素早く行う（k9s ライク）。
@@ -116,7 +113,6 @@
   - カラム間移動（左右）、タスク選択（上下）
   - ステータス変更（→/←）
   - 着手（In Progress へ移動＝worktree+ブランチ作成）
-  - PR作成（In Progress 中のタスクから実行→In Review 遷移）
   - 完了/中止（Done/Cancelled へ移動＝worktree削除）
   - 画面更新/保存（自動保存。手動コマンドも可）
 - キーバインド:
@@ -133,7 +129,6 @@
 - 削除: `Delete` / `Backspace`（確認ダイアログあり）
   - 動作: タスク削除時に、関連する worktree とローカルブランチも削除する。
   - 着手（worktree+ブランチ作成）: `s`
-  - PR作成（gh 使用・In Reviewへ）: `p`
   - 完了: `d`
   - 中止: `x`
   - 更新: `r`
@@ -141,7 +136,6 @@
   - 終了: `q`
 - 備考:
   - Done/Cancelled での worktree 削除は確認なし（MVP）。
-  - In Progress 以外では `p` は無効（トーストで案内）。
 - エディタ起動: 自動では開かない（将来オプション）。
 
 ## CLI 補助コマンド（任意・後方互換）
@@ -151,7 +145,6 @@
   - `vibedove` / `vibedove tui`: TUI を起動（既定）
   - `vibedove new "<title>"`: タスク追加（To Do）
   - `vibedove start <id>`: In Progress へ移行＋worktree/ブランチ作成
-  - `vibedove pr <id>`: In Progress 中のタスクで PR 作成し In Review へ
   - `vibedove done <id>` / `vibedove cancel <id>`: 状態変更し worktree 削除
 
 ## エラーハンドリング / セーフティ
@@ -160,7 +153,7 @@
 - ログ: 操作ログを標準出力に簡潔に表示。詳細ログは将来検討。
 
 ## 非機能
-- オフライン: gh を使う操作（PR作成）以外はオフライン動作。
+ - オフライン: オフラインで動作。
 - セキュリティ: 認証情報は gh/ssh に委譲。秘密情報を保存しない。
 - パフォーマンス: 数百タスクまで快適操作を目安。
 
