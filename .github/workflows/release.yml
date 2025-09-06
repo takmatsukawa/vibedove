@@ -1,17 +1,19 @@
-name: Build and Release
+name: Bump and Release
 
 on:
-  push:
-    tags:
-      - 'v*'
-  workflow_run:
-    workflows:
-      - Bump version
-    types:
-      - completed
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: 'Version bump type'
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
 
 jobs:
-  build:
+  bump-and-release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -21,7 +23,28 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: oven-sh/setup-bun@v1
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+
+      - name: Configure Git
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+      - name: Bump version
+        run: |
+          bun pm version ${{ inputs.bump_type }}
+
+      - name: Get new version
+        id: ver
+        run: |
+          version=$(jq -r .version package.json)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Push changes and tags
+        run: |
+          git push
+          git push --tags
 
       - name: Build binaries
         run: |
@@ -33,7 +56,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           BINARIES=$(find . -type f -name "vibedove-*")
-          
-          gh release create ${{ github.ref_name }} \
+          tag="v${{ steps.ver.outputs.version }}"
+          gh release create "$tag" \
             --generate-notes \
             $BINARIES
