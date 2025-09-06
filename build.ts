@@ -12,10 +12,10 @@ async function buildCLI() {
     for (const platform of platforms) {
         const outputFile = `vibedove-${platform.os}-${platform.arch}${platform.ext}`;
 
-        await $`GOOS=${platform.os} GOARCH=${platform.arch} bun build ./index.ts --compile --outfile ${outputFile}`;
+        await $`GOOS=${platform.os} GOARCH=${platform.arch} bun build ./index.tsx --compile --outfile ${outputFile}`;
 
         console.log(`Built ${outputFile}`);
     }
 }
 
-buildCLI().catch(console.error);
+void buildCLI();
