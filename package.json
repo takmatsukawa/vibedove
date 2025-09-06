@@ -4,8 +4,9 @@
 	"type": "module",
 	"scripts": {
 		"start": "bun index.tsx",
-		"format": "biome check --write ."
-	},
+		"format": "biome check --write .",
+        "build": "bun run build.ts"
+    },
 	"devDependencies": {
 		"@biomejs/biome": "2.2.2",
 		"@types/bun": "latest",
