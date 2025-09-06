@@ -5,7 +5,8 @@
 	"scripts": {
 		"start": "bun index.tsx",
 		"format": "biome check --write .",
-		"build": "bun run build.ts"
+		"build": "bun run build.ts",
+		"install-bin": "bash ./install.sh"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.2.2",

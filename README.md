@@ -2,31 +2,26 @@
 
 ## Install
 
-Install the latest release binary (macOS/Linux):
+Install from local source using Bun (macOS/Linux):
+
+Requirements:
+
+- Bun v1.2+
+
+Steps:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/takmatsukawa/vibedove/main/install.sh | bash
+bun install
+bun run install-bin            # builds locally and installs to /usr/local/bin
 ```
 
-or with wget:
+Customize install location:
 
 ```bash
-wget -qO- https://raw.githubusercontent.com/takmatsukawa/vibedove/main/install.sh | bash
+VIBEDOVE_PREFIX=$HOME/.local/bin bun run install-bin
 ```
 
-Options (env vars):
-
-- `VIBEDOVE_VERSION`: specific tag like `v0.0.5` (default: latest)
-- `VIBEDOVE_PREFIX`: install path, e.g. `$HOME/.local/bin` (default: `/usr/local/bin`)
-
-Examples:
-
-```bash
-VIBEDOVE_VERSION=v0.0.5 curl -fsSL https://raw.githubusercontent.com/takmatsukawa/vibedove/main/install.sh | bash
-VIBEDOVE_PREFIX=$HOME/.local/bin curl -fsSL https://raw.githubusercontent.com/takmatsukawa/vibedove/main/install.sh | bash
-```
-
-After installation:
+Verify:
 
 ```bash
 vibedove --help
