@@ -77,7 +77,7 @@ function Help() {
         <>
             <Text>
                 Keys: h/l(←/→) move columns • j/k(↑/↓) select • n new • s start •
-                t ToDo (In Progress→To Do) • m merge+done (detail/In Progress) • d done • x cancel • r review (In Progress→In Review) • R refresh • c project-config • C global-config • ? help • q quit
+                t ToDo (any→To Do) • m merge+done (detail/In Progress) • d done • x cancel • r review (In Progress→In Review) • R refresh • c project-config • C global-config • ? help • q quit
             </Text>
         </>
     );
@@ -350,20 +350,18 @@ export function App() {
 				).catch((e) => setMessage(String((e as any)?.message ?? e)));
 				return;
 			}
-			if (input === "t") {
-				if (!board || !inspecting.task) return;
-				if (inspecting.task.status === "In Progress") {
-					void changeTaskStatus(
-						board,
-						inspecting.task.id,
-						"To Do",
-						setBoard,
-						setCursor,
-						setInspecting,
-					);
-				}
-				return;
-			}
+            if (input === "t") {
+                if (!board || !inspecting.task) return;
+                void changeTaskStatus(
+                    board,
+                    inspecting.task.id,
+                    "To Do",
+                    setBoard,
+                    setCursor,
+                    setInspecting,
+                );
+                return;
+            }
 
 			if (input === "m") {
 				if (!board || !inspecting.task) return;
@@ -452,25 +450,23 @@ export function App() {
 			setCursor((c) => ({ ...c, row: c.row + 1 }));
 
 		// Actions
-		if (input === "t") {
-			// Move In Progress -> To Do from list view
-			if (!board || !grouped) return;
-			const list = grouped[STATUSES[cursor.col]];
-			if (list.length === 0) return;
-			const row = Math.min(cursor.row, list.length - 1);
-			const task = list[row];
-			if (task.status === "In Progress") {
-				void changeTaskStatus(
-					board,
-					task.id,
-					"To Do",
-					setBoard,
-					setCursor,
-					setInspecting,
-				);
-			}
-			return;
-		}
+        if (input === "t") {
+            // Move any status -> To Do from list view
+            if (!board || !grouped) return;
+            const list = grouped[STATUSES[cursor.col]];
+            if (list.length === 0) return;
+            const row = Math.min(cursor.row, list.length - 1);
+            const task = list[row];
+            void changeTaskStatus(
+                board,
+                task.id,
+                "To Do",
+                setBoard,
+                setCursor,
+                setInspecting,
+            );
+            return;
+        }
 
 		// Open project config in EDITOR (create if missing)
 		if (input === "c") {
@@ -994,30 +990,42 @@ async function changeTaskStatus(
 // (inline editing helpers were replaced by ink-text-input for simplicity)
 
 async function startTask(
-	board: Board,
-	task: Task,
-	cfg: Config,
-	setBoard: (b: Board) => void,
-	setInspecting: (s: { active: boolean; task: Task | null }) => void,
-	setMessage: (m: string) => void,
-	setCursor: (c: Cursor) => void,
+    board: Board,
+    task: Task,
+    cfg: Config,
+    setBoard: (b: Board) => void,
+    setInspecting: (s: { active: boolean; task: Task | null }) => void,
+    setMessage: (m: string) => void,
+    setCursor: (c: Cursor) => void,
 ) {
 	if (task.status !== "To Do") {
 		setMessage("Start is only available from To Do");
 		return;
 	}
-	const slug = slugify(task.title);
-	const branch = `${cfg.branchPrefix}/task/${task.id}-${slug}`;
-	const base = cfg.defaultBaseBranch ?? (await currentBranch());
-	const wtDir = path.join(
-		resolveTmpRoot(cfg),
-		`${cfg.branchPrefix}-${task.id}-${slug}`,
-	);
+    const slug = slugify(task.title);
+    // Reuse existing branch/worktree if present when re-starting
+    const branch = task.branch || `${cfg.branchPrefix}/task/${task.id}-${slug}`;
+    const base = cfg.defaultBaseBranch ?? (await currentBranch());
+    const wtDir = task.worktreePath ||
+        path.join(
+            resolveTmpRoot(cfg),
+            `${cfg.branchPrefix}-${task.id}-${slug}`,
+        );
 
 	// debug removed
 
-	await createBranch(branch, base);
-	await addWorktree(wtDir, branch);
+    await createBranch(branch, base);
+    // If worktree dir already exists (e.g., returned to To Do), reuse it
+    let reused = false;
+    try {
+        const st = await fs.stat(wtDir);
+        reused = st.isDirectory();
+    } catch {
+        reused = false;
+    }
+    if (!reused) {
+        await addWorktree(wtDir, branch);
+    }
 	void logInfo("startTask.start", {
 		id: task.id,
 		title: task.title,
@@ -1026,65 +1034,69 @@ async function startTask(
 		wtDir,
 	});
 
-	// Copy configured files/dirs, then run per-project setup script if configured
-	let setupNote: string | null = null;
-	let copyNote: string | null = null;
-	try {
-		const pcfg: ProjectConfig = await loadProjectConfig();
-		// Copy files first so setup can rely on them (e.g., .env)
-		if (pcfg.copyFiles && pcfg.copyFiles.length > 0) {
-			const repoRoot = process.cwd();
-			const errors: string[] = [];
-			for (const rel of pcfg.copyFiles) {
-				const trimmed = rel.trim();
-				if (!trimmed) continue;
-				if (path.isAbsolute(trimmed)) {
-					errors.push(`skip absolute: ${trimmed}`);
-					continue;
-				}
-				const src = path.resolve(repoRoot, trimmed);
-				const dest = path.resolve(wtDir, trimmed);
-				try {
-					await copyRecursive(src, dest);
-					void logInfo("startTask.copy.ok", { id: task.id, src, dest });
-				} catch (e) {
-					const msg = String((e as any)?.message ?? e);
-					errors.push(`${trimmed}: ${msg}`);
-					void logError("startTask.copy.fail", { id: task.id, src, dest, error: msg });
-				}
-			}
-			if (errors.length) copyNote = `copy issues: ${errors.join("; ")}`;
-		}
+    // Copy configured files/dirs, then run per-project setup script if configured
+    let setupNote: string | null = null;
+    let copyNote: string | null = null;
+    try {
+        const pcfg: ProjectConfig = await loadProjectConfig();
+        if (!reused) {
+            // Copy files first so setup can rely on them (e.g., .env)
+            if (pcfg.copyFiles && pcfg.copyFiles.length > 0) {
+                const repoRoot = process.cwd();
+                const errors: string[] = [];
+                for (const rel of pcfg.copyFiles) {
+                    const trimmed = rel.trim();
+                    if (!trimmed) continue;
+                    if (path.isAbsolute(trimmed)) {
+                        errors.push(`skip absolute: ${trimmed}`);
+                        continue;
+                    }
+                    const src = path.resolve(repoRoot, trimmed);
+                    const dest = path.resolve(wtDir, trimmed);
+                    try {
+                        await copyRecursive(src, dest);
+                        void logInfo("startTask.copy.ok", { id: task.id, src, dest });
+                    } catch (e) {
+                        const msg = String((e as any)?.message ?? e);
+                        errors.push(`${trimmed}: ${msg}`);
+                        void logError("startTask.copy.fail", { id: task.id, src, dest, error: msg });
+                    }
+                }
+                if (errors.length) copyNote = `copy issues: ${errors.join("; ")}`;
+            }
 
-		if (pcfg.setupScript && pcfg.setupScript.trim().length > 0) {
-			// Execute inside the new worktree directory
-			const cmd = `cd "${wtDir}" && ${pcfg.setupScript}`;
-			void logInfo("startTask.setup.start", { id: task.id, cmd });
-			const proc = await $`bash -lc ${cmd}`.nothrow();
-			if (proc.exitCode !== 0) {
-				const stderr =
-					(await proc.stderr?.text?.()) || (await proc.stdout?.text?.()) || "";
-				setupNote = `setup failed: ${stderr.trim()}`;
-				void logError("startTask.setup.fail", {
-					id: task.id,
-					exitCode: proc.exitCode,
-					stderr: stderr.trim(),
-				});
-			} else {
-				setupNote = "setup OK";
-				void logInfo("startTask.setup.ok", {
-					id: task.id,
-					exitCode: proc.exitCode,
-				});
-			}
-		}
-	} catch (e) {
-		setupNote = `setup error: ${String((e as any)?.message ?? e)}`;
-		void logError("startTask.setup.exception", {
-			id: task.id,
-			error: String((e as any)?.message ?? e),
-		});
-	}
+            if (pcfg.setupScript && pcfg.setupScript.trim().length > 0) {
+                // Execute inside the new worktree directory
+                const cmd = `cd "${wtDir}" && ${pcfg.setupScript}`;
+                void logInfo("startTask.setup.start", { id: task.id, cmd });
+                const proc = await $`bash -lc ${cmd}`.nothrow();
+                if (proc.exitCode !== 0) {
+                    const stderr =
+                        (await proc.stderr?.text?.()) || (await proc.stdout?.text?.()) || "";
+                    setupNote = `setup failed: ${stderr.trim()}`;
+                    void logError("startTask.setup.fail", {
+                        id: task.id,
+                        exitCode: proc.exitCode,
+                        stderr: stderr.trim(),
+                    });
+                } else {
+                    setupNote = "setup OK";
+                    void logInfo("startTask.setup.ok", {
+                        id: task.id,
+                        exitCode: proc.exitCode,
+                    });
+                }
+            }
+        } else {
+            copyNote = "reused existing worktree";
+        }
+    } catch (e) {
+        setupNote = `setup error: ${String((e as any)?.message ?? e)}`;
+        void logError("startTask.setup.exception", {
+            id: task.id,
+            error: String((e as any)?.message ?? e),
+        });
+    }
 
 	const now = new Date().toISOString();
 	const next: Board = {
@@ -1118,7 +1130,7 @@ async function startTask(
 	if (copyNote) notes.push(copyNote);
 	if (setupNote) notes.push(setupNote);
 	const note = notes.length ? ` • ${notes.join(" • ")}` : "";
-	setMessage(`Started ${task.id} on ${branch}${note}`);
+    setMessage(`Started ${task.id} on ${branch}${note}`);
 }
 
 async function copyRecursive(src: string, dest: string): Promise<void> {
