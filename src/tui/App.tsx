@@ -116,6 +116,7 @@ export function App() {
 		task: Task | null;
 	}>({ active: false, task: null });
 	const [editChooser, setEditChooser] = useState(false);
+	// Legacy single-field editors kept for backward compatibility, but replaced by unified editor
 	const [editingTitle, setEditingTitle] = useState<{
 		active: boolean;
 		buf: string;
@@ -134,6 +135,14 @@ export function App() {
 		buf: "",
 		original: "",
 	});
+
+	// Unified detail editor (like creation flow)
+	const [detailEditing, setDetailEditing] = useState<{
+		active: boolean;
+		focus: "title" | "desc";
+		title: string;
+		desc: string;
+	}>({ active: false, focus: "title", title: "", desc: "" });
 	const [message, setMessage] = useState<string>("");
 	const grouped = useMemo(() => (board ? group(board) : null), [board]);
 
@@ -154,13 +163,9 @@ export function App() {
                 setCreating({ active: false, focus: "title", title: "", desc: "" });
                 return;
             }
-            // Navigate between Title <-> Description with Tab / Shift+Tab
-            if (key.tab && key.shift) {
-                setCreating((s) => ({ ...s, focus: "title" }));
-                return;
-            }
-            if (key.tab && !key.shift) {
-                setCreating((s) => ({ ...s, focus: "desc" }));
+            // Toggle focus between Title <-> Description with Tab or Shift+Tab
+            if (key.tab) {
+                setCreating((s) => ({ ...s, focus: s.focus === "title" ? "desc" : "title" }));
                 return;
             }
             return; // let TextInput handle typing & Enter
@@ -238,11 +243,27 @@ export function App() {
 
 		// Inspecting mode (floating detail)
 		if (inspecting.active) {
+			// Unified detail-editing key handling (Title <-> Description via Tab/Shift+Tab)
+			if (detailEditing.active) {
+				if (key.escape) {
+					setDetailEditing({ active: false, focus: "title", title: "", desc: "" });
+					return;
+				}
+				if (key.tab) {
+					setDetailEditing((s) => ({
+						...s,
+						focus: s.focus === "title" ? "desc" : "title",
+					}));
+					return;
+				}
+				return; // Let TextInput capture typing/enter while editing
+			}
 			// Allow navigating tasks with hjkl/arrow keys while inspecting
 			// Skip when editing title/description or chooser is active
 			if (
 				!editingTitle.active &&
 				!editingDesc.active &&
+				!detailEditing.active &&
 				!editChooser &&
 				grouped
 			) {
@@ -393,7 +414,16 @@ export function App() {
 				return;
 			}
 			if (input === "e") {
-				setEditChooser(true);
+				if (!inspecting.task) return;
+				setEditChooser(false);
+				setEditingTitle({ active: false, buf: "", original: "" });
+				setEditingDesc({ active: false, buf: "", original: "" });
+				setDetailEditing({
+					active: true,
+					focus: "title",
+					title: inspecting.task.title,
+					desc: inspecting.task.description ?? "",
+				});
 				return;
 			}
 
@@ -662,13 +692,18 @@ export function App() {
                                 value={creating.title}
                                 focus={creating.focus === "title"}
                                 onChange={(v) => setCreating((s) => ({ ...s, title: v }))}
-                                onSubmit={(v) => {
-                                    const t = v.trim();
-                                    if (!t.length) return; // keep focus until user types
-                                    setCreating((s) => ({ ...s, focus: "desc" }));
+                                onSubmit={async (v) => {
+                                    const title = v.trim();
+                                    if (!title.length) return; // keep focus until user types
+                                    const desc = creating.desc.trim();
+                                    if (board) {
+                                        await addTask(board, title, desc || undefined, setBoard, setCursor);
+                                    }
+                                    setCreating({ active: false, focus: "title", title: "", desc: "" });
+                                    setMessage("");
                                 }}
                             />
-                            <Text dimColor>  Enter to continue • Esc to cancel • Tab to switch</Text>
+                            <Text dimColor>  Enter to submit • Esc to cancel • Tab to switch</Text>
                         </Box>
                         <Box>
                             <Text>Description (optional): </Text>
@@ -692,7 +727,7 @@ export function App() {
                                 }}
                             />
                         </Box>
-                        <Text dimColor>Enter on Description to submit • Esc to cancel • Tab/Shift+Tab to switch • Leave description empty to skip</Text>
+                        <Text dimColor>Enter to submit • Esc to cancel • Tab/Shift+Tab to switch • Leave description empty to skip</Text>
                     </Box>
                 ) : deleting.active && deleting.task ? (
 					<Text>
@@ -729,29 +764,40 @@ export function App() {
 						ID: <Text color="cyan">{inspecting.task.id}</Text>
 					</Text>
 					<Box flexDirection="column">
-						<Text>Title:</Text>
-						{editingTitle.active ? (
-							<TextInput
-								value={editingTitle.buf}
-								onChange={(v) => setEditingTitle((s) => ({ ...s, buf: v }))}
-								onSubmit={(v) => {
-									const newTitle = v.trim();
-									setEditingTitle({ active: false, buf: "", original: "" });
-									if (newTitle.length && board && inspecting.task) {
-										void saveTitle(
-											board,
-											inspecting.task.id,
-											newTitle,
-											setBoard,
-											setInspecting,
-										);
-									}
-								}}
-							/>
-						) : (
-							<Text>{inspecting.task.title}</Text>
-						)}
-						<Text dimColor>(press e to edit, Enter save, Esc cancel)</Text>
+					<Text>Title:</Text>
+                    {detailEditing.active ? (
+                        <TextInput
+                            value={detailEditing.title}
+                            focus={detailEditing.focus === "title"}
+                            onChange={(v) => setDetailEditing((s) => ({ ...s, title: v }))}
+                            onSubmit={async () => {
+                                if (!board || !inspecting.task) return;
+                                const newTitle = detailEditing.title.trim();
+                                const newDesc = detailEditing.desc;
+                                if (!newTitle.length) {
+                                    setDetailEditing((s) => ({ ...s, focus: "title" }));
+                                    return;
+                                }
+                                await saveTaskEdits(
+                                    board,
+                                    inspecting.task.id,
+                                    newTitle,
+                                    newDesc,
+                                    setBoard,
+                                    setInspecting,
+                                );
+                                setDetailEditing({ active: false, focus: "title", title: "", desc: "" });
+                            }}
+                        />
+                    ) : (
+                        <Text>{inspecting.task.title}</Text>
+                    )}
+					<Text dimColor>
+						{detailEditing.active
+							? "Tab/Shift+Tab to switch • Esc to cancel"
+							: "Press e to edit"
+						}
+					</Text>
 					</Box>
 					<Text>
 						Status: <Text>{inspecting.task.status}</Text>
@@ -768,38 +814,46 @@ export function App() {
 						</Text>
 					) : null}
 					<Text>Description:</Text>
-					{editingDesc.active ? (
-						<TextInput
-							value={editingDesc.buf}
-							onChange={(v) => setEditingDesc((s) => ({ ...s, buf: v }))}
-							onSubmit={(v) => {
-								const text = v;
-								setEditingDesc({ active: false, buf: "", original: "" });
-								if (board && inspecting.task)
-									void saveDescription(
-										board,
-										inspecting.task.id,
-										text,
-										setBoard,
-										setInspecting,
-									);
-							}}
-						/>
-					) : (
-						<Text color="gray">
-							{inspecting.task.description?.length
-								? inspecting.task.description
-								: "—"}
-						</Text>
+                    {detailEditing.active ? (
+                        <TextInput
+                            value={detailEditing.desc}
+                            focus={detailEditing.focus === "desc"}
+                            onChange={(v) => setDetailEditing((s) => ({ ...s, desc: v }))}
+                            onSubmit={async () => {
+                                if (!board || !inspecting.task) return;
+                                const newTitle = detailEditing.title.trim();
+                                const newDesc = detailEditing.desc;
+                                if (!newTitle.length) {
+                                    setDetailEditing((s) => ({ ...s, focus: "title" }));
+                                    return;
+                                }
+                                await saveTaskEdits(
+                                    board,
+                                    inspecting.task.id,
+                                    newTitle,
+                                    newDesc,
+                                    setBoard,
+                                    setInspecting,
+                                );
+                                setDetailEditing({ active: false, focus: "title", title: "", desc: "" });
+                            }}
+                        />
+                    ) : (
+                        <Text color="gray">
+                            {inspecting.task.description?.length
+                                ? inspecting.task.description
+                                : "—"}
+                        </Text>
 					)}
 					<Text dimColor>
-						{editingDesc.active
-							? "Enter save • Esc cancel"
-							: "Press e to edit • hjkl/arrow to switch • Enter/Esc to close"}
+						{detailEditing.active
+							? "Enter to save • Esc to cancel • Tab/Shift+Tab to switch"
+							: "Press e to edit • hjkl/arrow to switch • Enter/Esc to close"
+						}
 					</Text>
 				</Box>
 			) : null}
-			{editChooser && inspecting.active && inspecting.task ? (
+			{editChooser && !detailEditing.active && inspecting.active && inspecting.task ? (
 				<Box marginTop={1}>
 					<SelectInput
 						items={[
@@ -961,6 +1015,35 @@ async function saveDescription(
 	setBoard(next);
 	const updated = next.tasks.find((t) => t.id === taskId) ?? null;
 	setInspecting({ active: true, task: updated });
+}
+
+// Save multiple fields of a task atomically in one write
+async function saveTaskEdits(
+    board: Board,
+    taskId: string,
+    title: string,
+    description: string,
+    setBoard: (b: Board) => void,
+    setInspecting: (s: { active: boolean; task: Task | null }) => void,
+) {
+    const now = new Date().toISOString();
+    const next: Board = {
+        ...board,
+        tasks: board.tasks.map((t) =>
+            t.id === taskId
+                ? {
+                      ...t,
+                      title,
+                      description,
+                      updatedAt: now,
+                  }
+                : t,
+        ),
+    };
+    await saveBoard(next);
+    setBoard(next);
+    const updated = next.tasks.find((t) => t.id === taskId) ?? null;
+    setInspecting({ active: true, task: updated });
 }
 
 async function changeTaskStatus(
