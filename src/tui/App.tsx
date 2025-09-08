@@ -699,7 +699,7 @@ export function App() {
                                     setMessage("");
                                 }}
                             />
-                            <Text dimColor>  Enter to submit • Esc to cancel • Tab to switch</Text>
+                            <Text dimColor>  Enter to submit • Esc to cancel • Tab to switch • Ctrl+J to newline</Text>
                         </Box>
                         <Box>
                             <Text>Description (optional): </Text>
@@ -723,7 +723,7 @@ export function App() {
                                 }}
                             />
                         </Box>
-                        <Text dimColor>Enter to submit • Esc to cancel • Tab/Shift+Tab to switch • Leave description empty to skip</Text>
+                        <Text dimColor>Enter to submit • Esc to cancel • Tab/Shift+Tab to switch • Ctrl+J to newline • Leave description empty to skip</Text>
                     </Box>
                 ) : deleting.active && deleting.task ? (
 					<Text>
@@ -790,7 +790,7 @@ export function App() {
                     )}
 					<Text dimColor>
 						{detailEditing.active
-							? "Tab/Shift+Tab to switch • Esc to cancel"
+							? "Tab/Shift+Tab to switch • Esc to cancel • Ctrl+J to newline"
 							: "Press e to edit"
 						}
 					</Text>
@@ -843,7 +843,7 @@ export function App() {
 					)}
 					<Text dimColor>
 						{detailEditing.active
-							? "Enter to save • Esc to cancel • Tab/Shift+Tab to switch"
+							? "Enter to save • Esc to cancel • Tab/Shift+Tab to switch • Ctrl+J to newline"
 							: "Press e to edit • hjkl/arrow to switch • Enter/Esc to close"
 						}
 					</Text>
